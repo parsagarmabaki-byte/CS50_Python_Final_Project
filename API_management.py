@@ -33,7 +33,7 @@ def clear_terminal():
 
 def add_symbol(username):
     asset = get_asset()
-    if asset == "1":
+    if asset == "1": 
         base_currency, quote_currency = get_currencies()
         if get_confirmation():
             content = frankfurter_api(base=base_currency, symbols=quote_currency)

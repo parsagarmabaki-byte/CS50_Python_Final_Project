@@ -98,20 +98,41 @@ def watchlist(username,task):
             print_watchlist(username)
         elif task == "2":
             add_symbol(username)
+        elif task == "3":
+            remove_symbol(username)
         get_choice=True
 
+def remove_symbol(directory):
+    path=Path(acount_files_path(directory))
+    symbols=read_file(path.joinpath("Watchlist.csv"))
+    print("Remove Symbol\n=============")
+    for i, symbol in enumerate(symbols):
+        print (f"{i}) {symbol["Stocks"]}")
+    print(f"{i+1}) Main menu")
+    choice=int(get_string("\nChoice: ",f"^[0-{i}]$"))
+    if choice != 0:
+        symbols.pop(choice)
+        with open(path.joinpath("Watchlist.csv"),"w",newline='') as file:
+            writer=csv.DictWriter(file,fieldnames=["Stocks"])
+            writer.writeheader()
+            for symbol in symbols:
+                writer.writerow({"Stocks":symbol["Stocks"]})
+
+
+        
+
+
 def print_watchlist(username):
-    with open(Path(acount_files_path(username).joinpath("Watchlist.csv"))) as file:
-        reader=csv.DictReader(file)
-        print("""
+    symbols=read_file(Path(acount_files_path(username).joinpath("Watchlist.csv")))
+    print("""
 =====================================
             WATCHLIST
 =====================================
               
   #   Symbol       
 -------------------------------------""")
-        for i,line in enumerate(reader):
-            print (f"  {i}   {line["Stocks"]}")
+    for i,line in enumerate(symbols):
+        print (f"  {i}   {line["Stocks"]}")
     print("-------------------------------------\n\n")
 
 def print_watchlist_submenu():

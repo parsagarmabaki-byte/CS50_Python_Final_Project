@@ -1,7 +1,7 @@
-from libraries import validate_email, EmailNotValidError
+from email_validator import validate_email,EmailNotValidError
 import sys, csv, datetime
 from pathlib import Path
-import re
+import re,csv
 
 
 class Acounts:
