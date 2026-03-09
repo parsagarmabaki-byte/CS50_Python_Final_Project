@@ -1,9 +1,8 @@
-from login_management import get_string, read_file, enter_email, acount_files_path
-from API_management import add_symbol, clear_terminal, get_confirmation
+from login_management import get_string, read_file, enter_email,acount_files_path
+from API_management import add_symbol,clear_terminal,get_confirmation
 import sys
 from pathlib import Path
 import csv
-
 
 def print_user_menu(username: str) -> None:
     menu = f"""
@@ -74,7 +73,7 @@ def get_choice():
 
 def menu(user, submenu, task):
     if submenu == "1":
-        watchlist(user["username"], task)
+        watchlist(user["username"],task)
     elif submenu == "2":
         update_prices(task)
     elif submenu == "3":
@@ -87,7 +86,7 @@ def menu(user, submenu, task):
         acount(user, task)
 
 
-def watchlist(username, task):
+def watchlist(username,task):
     clear_terminal()
     get_choice = False
     while task != "4":
@@ -96,29 +95,28 @@ def watchlist(username, task):
             task = get_task(limit=4)
             clear_terminal()
         if task == "1":
-            print_watchlist(username, "Watchlist")
+            print_watchlist(username,"Watchlist")
         elif task == "2":
             add_symbol(username)
         elif task == "3":
             remove_symbol(username)
-        get_choice = True
-
+        get_choice=True
 
 def remove_symbol(directory):
-    symbols, file_path, i = print_watchlist(directory, "Remove symbol")
-    choice = int(get_string("\nChoice: ", f"^[0-{i+1}]$"))
-    if choice != i + 1:
+    symbols,file_path,i=print_watchlist(directory,"Remove symbol")
+    choice=int(get_string("\nChoice: ",f"^[0-{i+1}]$"))
+    if choice != i+1:
         symbols.pop(choice)
-        with open(file_path.joinpath("Watchlist.csv"), "w", newline="") as file:
-            writer = csv.DictWriter(file, fieldnames=["Stocks"])
+        with open(file_path.joinpath("Watchlist.csv"),"w",newline='') as file:
+            writer=csv.DictWriter(file,fieldnames=["Stocks"])
             writer.writeheader()
             for symbol in symbols:
-                writer.writerow({"Stocks": symbol["Stocks"]})
+                writer.writerow({"Stocks":symbol["Stocks"]})
 
 
-def print_watchlist(username, filetype):
-    file_path = Path(acount_files_path(username).joinpath("Watchlist.csv"))
-    symbols = read_file(file_path)
+def print_watchlist(username,filetype):
+    file_path=Path(acount_files_path(username).joinpath("Watchlist.csv"))
+    symbols=read_file(file_path)
     print(f"""
 =====================================
             {filetype}
@@ -126,12 +124,11 @@ def print_watchlist(username, filetype):
               
   #   Symbol       
 -------------------------------------""")
-    for i, line in enumerate(symbols):
-        print(f"  {i}   {line["Stocks"]}")
+    for i,line in enumerate(symbols):
+        print (f"  {i}   {line["Stocks"]}")
     print(f"  {i+1}   Main menu")
     print("-------------------------------------\n\n")
-    return symbols, file_path, i
-
+    return symbols,file_path,i
 
 def print_watchlist_submenu():
     print("""1) Watchlist
@@ -140,7 +137,6 @@ def print_watchlist_submenu():
     3) Remove symbol
     4) Main menu
           """)
-
 
 def acount(user, task):
     clear_terminal()
@@ -160,10 +156,8 @@ def acount(user, task):
         get_chioce = True
     clear_terminal()
 
-
 def get_task(limit):
     return get_string("Choice: ", f"^[1-{limit}]$")
-
 
 def print_acount_submenu():
     print("""6) Account
