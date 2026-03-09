@@ -133,7 +133,7 @@ def remove_symbol(directory):
     choice = int(get_string("\nChoice: ", f"^[0-{i+1}]$"))
     if choice != i + 1:
         symbols.pop(choice)
-        with open(file_path.joinpath("Watchlist.csv"), "w", newline="") as file:
+        with open(file_path, "w", newline="") as file:
             writer = csv.DictWriter(file, fieldnames=["Stocks"])
             writer.writeheader()
             for symbol in symbols:

@@ -36,7 +36,7 @@ class Acounts:
                 writer = csv.DictWriter(f, fieldnames=["Stocks"])
             elif file_type == "Prices":
                 writer = csv.DictWriter(
-                    f, fieldnames=["date", "symbol", "price", "source"]
+                    f, fieldnames=["symbol", "price", "date", "source"]
                 )
             writer.writeheader()
 

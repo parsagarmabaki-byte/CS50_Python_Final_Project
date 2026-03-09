@@ -3,6 +3,7 @@ from login_management import get_string, acount_files_path, read_file
 import csv, os
 from pathlib import Path
 import re
+from pprint import pprint 
 
 
 def frankfurter_api(base="USD", symbols=None, start_date=None, end_date=None):
@@ -87,7 +88,9 @@ def updating_data(symbols, directory, updated_content):
 
 def group_symbols(currencies):
     symbols = []
+    pprint(currencies)
     for currency in currencies:
+        print(currency["symbol"])
         symbols.append(re.fullmatch(r"FX:(\w{3})(\w{3})", currency["symbol"]).groups())
     return symbols
 
