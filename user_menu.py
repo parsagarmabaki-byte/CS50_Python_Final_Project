@@ -102,6 +102,7 @@ def watchlist(username,task):
             remove_symbol(username)
         get_choice=True
 
+
 def remove_symbol(directory):
     symbols,file_path,i=print_watchlist(directory,"Remove symbol")
     choice=int(get_string("\nChoice: ",f"^[0-{i+1}]$"))
@@ -130,6 +131,7 @@ def print_watchlist(username,filetype):
     print("-------------------------------------\n\n")
     return symbols,file_path,i
 
+
 def print_watchlist_submenu():
     print("""1) Watchlist
     1) View watchlist
@@ -137,6 +139,7 @@ def print_watchlist_submenu():
     3) Remove symbol
     4) Main menu
           """)
+
 
 def acount(user, task):
     clear_terminal()
@@ -156,8 +159,10 @@ def acount(user, task):
         get_chioce = True
     clear_terminal()
 
+
 def get_task(limit):
     return get_string("Choice: ", f"^[1-{limit}]$")
+
 
 def print_acount_submenu():
     print("""6) Account
