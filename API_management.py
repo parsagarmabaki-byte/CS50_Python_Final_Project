@@ -33,38 +33,51 @@ def clear_terminal():
 
 def add_symbol(username):
     asset = get_asset()
-    if asset == "1": 
+    if asset == "1":
         base_currency, quote_currency = get_currencies()
         if get_confirmation():
             content = frankfurter_api(base=base_currency, symbols=quote_currency)
             for file_type in ["Watchlist", "Prices"]:
                 if file_type == "Watchlist":
-                    with open(
-                        Path(acount_files_path(username)).joinpath(f"{file_type}.csv"),
-                        "a",
-                        newline="",
-                    ) as file:
-                        writer = csv.DictWriter(file, fieldnames=["Stocks"])
-                        writer.writerow(
-                            {"Stocks": f"FX:{base_currency}{quote_currency}"}
-                        )
+                    appending_watchlist(
+                        directory=username,
+                        base_currency=base_currency,
+                        quote_currency=quote_currency,
+                    )
                 elif file_type == "Prices":
-                    with open(
-                        Path(acount_files_path(username)).joinpath(f"{file_type}.csv"),
-                        "a",
-                        newline="",
-                    ) as file:
-                        writer = csv.DictWriter(
-                            file, fieldnames=["symbol", "price", "date", "source"]
-                        )
-                        writer.writerow(
-                            {
-                                "symbol": f"FX:{base_currency}{quote_currency}",
-                                "price": content["rates"][quote_currency],
-                                "date": content["date"],
-                                "source": "Frankfurter",
-                            }
-                        )
+                    appending_Prices(
+                        directory=username,
+                        base_currency=base_currency,
+                        quote_currency=quote_currency,
+                        api_content=content,
+                    )
+
+
+def appending_watchlist(directory, base_currency, quote_currency):
+    with open(
+        Path(acount_files_path(directory)).joinpath("Watchlist.csv"),
+        "a",
+        newline="",
+    ) as file:
+        writer = csv.DictWriter(file, fieldnames=["Stocks"])
+        writer.writerow({"Stocks": f"FX:{base_currency}{quote_currency}"})
+
+
+def appending_Prices(directory, base_currency, quote_currency, api_content):
+    with open(
+        Path(acount_files_path(directory)).joinpath("Prices.csv"),
+        "a",
+        newline="",
+    ) as file:
+        writer = csv.DictWriter(file, fieldnames=["symbol", "price", "date", "source"])
+        writer.writerow(
+            {
+                "symbol": f"FX:{base_currency}{quote_currency}",
+                "price": api_content["rates"][quote_currency],
+                "date": api_content["date"],
+                "source": "Frankfurter",
+            }
+        )
 
 
 def get_currencies():
