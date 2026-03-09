@@ -33,7 +33,7 @@ class Acounts:
     def file_specification(file_path: str, file_type: str, username: str) -> None:
         with open(file_path, "a") as f:
             if file_type == "Watchlist":
-                writer = csv.DictWriter(f, fieldnames=["Stocks", username])
+                writer = csv.DictWriter(f, fieldnames=["Stocks"])
             elif file_type == "Prices":
                 writer = csv.DictWriter(
                     f, fieldnames=["date", "symbol", "price", "source"]
