@@ -1,8 +1,9 @@
 from login_management import get_string, read_file, enter_email, acount_files_path
-from API_management import add_symbol, clear_terminal, get_confirmation, update_prices
+from API_management import add_symbol, clear_terminal, get_confirmation, update_prices,update_symbol_data,group_symbols,clearing_prices,appending_Prices
 import sys
 from pathlib import Path
 import csv
+from pprint import pprint
 
 
 def print_user_menu(username: str) -> None:
@@ -98,10 +99,29 @@ def update_price_menu(task, username):
         if task == "1":
             update_prices(directory=username)
         elif task == "2":
-            ...
+            update_symbol(directory=username)
         elif task == "3":
             ...
         get_choice = True
+
+def update_symbol(directory):
+    currencies,file_path,i=print_watchlist(directory,"Watchlist")
+    choice = int(get_string("\nChoice: ", f"^[0-{i+1}]$"))
+    if choice != i+1:
+        symbols=group_symbols([currencies[choice]],dict_value="Stocks")
+        base_currency,quote_currency=symbols[0]
+        price,date=update_symbol_data(base_currency,quote_currency)
+
+        prices_list=read_file(Path(acount_files_path(directory).joinpath("Prices.csv")))
+        prices_list[choice]['price']=price
+        prices_list[choice]['date']=date
+        pprint(prices_list)
+        clearing_prices(directory)
+        symbols=group_symbols(currencies,)
+        
+
+
+
 
 
 def print_update_price_submenu():

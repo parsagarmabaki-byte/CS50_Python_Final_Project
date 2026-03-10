@@ -70,12 +70,12 @@ def update_prices(directory):
     currencies = read_file(file_path)
     symbols: list = group_symbols(currencies)
     updated_content = update_data(symbols)
-    clearing_prices(file_path)
+    clearing_prices(directory)
     updating_data(symbols, directory, updated_content)
 
 
-def clearing_prices(file_path):
-    with open(file_path, "w", newline="") as file:
+def clearing_prices(directory):
+    with open(Path(acount_files_path(directory).joinpath("Prices.csv")), "w", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=["symbol", "price", "date", "source"])
         writer.writeheader()
 
@@ -86,12 +86,10 @@ def updating_data(symbols, directory, updated_content):
         appending_Prices(directory, base_currency, quote_currency, updated_content[i])
 
 
-def group_symbols(currencies):
+def group_symbols(currencies,dict_value="symbol"):
     symbols = []
-    pprint(currencies)
     for currency in currencies:
-        print(currency["symbol"])
-        symbols.append(re.fullmatch(r"FX:(\w{3})(\w{3})", currency["symbol"]).groups())
+        symbols.append(re.fullmatch(r"FX:(\w{3})(\w{3})", currency[dict_value]).groups())
     return symbols
 
 
@@ -101,6 +99,12 @@ def update_data(symbols):
         base_currency, qoute_currency = symbols[i]
         updated_currencies.append(frankfurter_api(base_currency, qoute_currency))
     return updated_currencies
+
+
+def update_symbol_data(base_currency,quote_currency):
+    content = frankfurter_api(base_currency,quote_currency)
+    return content['rates'][quote_currency],content['date']
+
 
 
 def appending_Prices(directory, base_currency, quote_currency, api_content):
