@@ -1,6 +1,4 @@
 symbol,price,date,source
-FX:USDSEK,9.2553,2026-03-09,Frankfurter
-FX:GBPSEK,12.3593,2026-03-09,Frankfurter
-FX:SEKDKK,0.69856,2026-03-09,Frankfurter
-FX:NOKGBP,0.07757,2026-03-09,Frankfurter
-FX:GBPEUR,1.1557,2026-03-09,Frankfurter
+FX:USDEUR,0.85903,2026-03-10,Frankfurter
+FX:SEKDKK,0.70444,2026-03-10,Frankfurter
+FX:NOKDKK,0.67025,2026-03-10,Frankfurter

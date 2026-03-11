@@ -123,6 +123,24 @@ def appending_Prices(directory, base_currency, quote_currency, api_content):
             }
         )
 
+def clearing_writing_content(directory,content):
+    with open (Path(acount_files_path(directory).joinpath("Prices.csv")),'w',newline='') as file:
+            writer=csv.DictWriter(file,fieldnames=['symbol','price','date','source'])
+            writer.writeheader()
+            for element in content:
+                writer.writerow({
+                    'symbol':element['symbol'],
+                    'price':element['price'],
+                    'date':element['date'],
+                    'source':element['source']
+                })
+
+def clearing_writing_watchlist(directory,symbols):
+    with open(Path(acount_files_path(directory).joinpath("Watchlist.csv")),'w',newline='',) as file:
+            writer = csv.DictWriter(file, fieldnames=["Stocks"])
+            writer.writeheader()
+            for symbol in symbols:
+                writer.writerow({"Stocks": symbol["Stocks"]})
 
 def get_currencies():
     currencies: list = ["USD", "EUR", "GBP", "SEK", "DKK", "NOK"]

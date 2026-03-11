@@ -1,5 +1,5 @@
 from login_management import get_string, read_file, enter_email, acount_files_path
-from API_management import add_symbol, clear_terminal, get_confirmation, update_prices,update_symbol_data,group_symbols,clearing_prices,appending_Prices
+from API_management import add_symbol, clear_terminal, get_confirmation, update_prices,update_symbol_data,group_symbols,clearing_writing_watchlist,appending_Prices,clearing_writing_content
 import sys
 from pathlib import Path
 import csv
@@ -115,12 +115,9 @@ def update_symbol(directory):
         prices_list=read_file(Path(acount_files_path(directory).joinpath("Prices.csv")))
         prices_list[choice]['price']=price
         prices_list[choice]['date']=date
-        pprint(prices_list)
-        clearing_prices(directory)
-        symbols=group_symbols(currencies,)
-        
 
-
+        clearing_writing_content(directory,prices_list)
+            
 
 
 
@@ -150,14 +147,13 @@ def watchlist(username, task):
 
 def remove_symbol(directory):
     symbols, file_path, i = print_watchlist(directory, "Remove symbol")
+    content:list=read_file(Path(acount_files_path(directory).joinpath("Prices.csv")))
     choice = int(get_string("\nChoice: ", f"^[0-{i+1}]$"))
     if choice != i + 1:
         symbols.pop(choice)
-        with open(file_path, "w", newline="") as file:
-            writer = csv.DictWriter(file, fieldnames=["Stocks"])
-            writer.writeheader()
-            for symbol in symbols:
-                writer.writerow({"Stocks": symbol["Stocks"]})
+        content.pop(choice)
+        clearing_writing_watchlist(directory,symbols)    
+        clearing_writing_content(directory,content)
 
 
 def print_watchlist(username, filetype):
