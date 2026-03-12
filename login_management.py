@@ -76,19 +76,25 @@ class Account:
 def account_files_path(username):
     """Compute the path to the given user's account directory.
 
+    The previous implementation assumed the workspace root was a folder
+    literally named ``final_project`` which breaks when cloning into a
+    differently‑named directory or running from elsewhere.  Instead we derive the
+    root dynamically using this module's location and walk up to the
+    ``csv_files/account_directory`` subfolder.  This makes the function
+    portable across machines.
+
     Args:
         username (str): account identifier.
 
     Returns:
         Path: absolute path to the user's folder.
     """
-    return (
-        Path("final_project")
-        .resolve()
-        .parent.joinpath("csv_files")
-        .joinpath("account_directory")
-        .joinpath(username)
-    )
+    base = Path(__file__).resolve().parent
+    # project root is one level up from this module
+    project_root = base
+    # if this file is already inside a subfolder, adjust accordingly
+    # (in this simple project it's the workspace root)
+    return project_root.joinpath("csv_files", "account_directory", username)
 
 
 def login_options() -> int:

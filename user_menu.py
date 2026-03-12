@@ -46,20 +46,11 @@ def print_user_menu(username: str) -> None:
    3.1) Show prices for date range 
    3.2) Show Watchlist prices
 
-4) Summary / Analysis
-   4.1) Summary (7 days)
-   4.2) Summary (30 days)
-   4.3) Summary (custom window)
-
-5) Export data
-   5.1) Export "long" format CSV (date,symbol,price,source)
-   5.2) Export "wide" format CSV (date columns per symbol)
-
-6) Account
-   6.1) Show account info (username/email)
-   6.2) Change email (optional)
-   6.3) Change password (optional)
-   6.4) Delete account (danger)
+4) Account
+   4.1) Show account info (username/email)
+   4.2) Change email (optional)
+   4.3) Change password (optional)
+   4.4) Delete account (danger)
 
 
 0) Log out
@@ -98,7 +89,7 @@ def prompt_choice() -> tuple[str, str | None]:
     while True:
         raw_choice: tuple = get_string(
             "Choice: ",
-            r"^(?:(1)(?:\.?([123]))?|(2)(?:\.([12]))?|(3)(?:\.([123]))?|(4)(?:\.([12]))?|(5)(?:\.([12]))?|(6)(?:\.([1234]))?|([0Q]))$",
+            r"^(?:(1)(?:\.?([123]))?|(2)(?:\.([12]))?|(3)(?:\.([12]))?|(4)(?:\.([1234]))?|([0Q]))$",
             get_groups=True,
         )
         if raw_choice[0] == "Q":
@@ -128,10 +119,6 @@ def dispatch_menu(user: dict, submenu: str, task: str | None) -> bool | None:
     elif submenu == "3":
         view_prices_menu(task, user["username"])
     elif submenu == "4":
-        summary_analysis(task)
-    elif submenu == "5":
-        export_data(task)
-    elif submenu == "6":
         if account(user, task):
             return True
 
@@ -243,8 +230,8 @@ def update_symbol(directory):
         )
         prices_list[selection]["price"] = price
         prices_list[selection]["date"] = date
-
         rewrite_prices_file(directory, prices_list)
+        print()
 
 
 def print_update_price_submenu():
@@ -475,7 +462,7 @@ def delete_account_with_verification(user) -> bool:
 
 def print_account_submenu():
     """Display account menu options."""
-    print("""6) Account
+    print("""4) Account
    1) Show account info (username/email)
    2) Change email (optional)
    3) Change password (optional)
