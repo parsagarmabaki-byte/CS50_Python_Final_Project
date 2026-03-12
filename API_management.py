@@ -3,7 +3,6 @@ from login_management import get_string, account_files_path, read_file
 import csv, os
 from pathlib import Path
 import re
-from pprint import pprint
 from datetime import date, timedelta
 
 
@@ -36,8 +35,8 @@ def get_asset():
     Returns:
         str: choice '1','2', or '3'.
     """
-    print("Select asset type:\n1) Forex\n2) Crypto\n3) Back")
-    return get_string("Choice: ", "^[1-3]$")
+    print("Select asset type:\n1) Forex\n2) Back")
+    return get_string("Choice: ", "^[1-2]$")
 
 
 def print_currency(type="base"):
@@ -87,6 +86,7 @@ def add_symbol(username):
                         quote_currency=quote_currency,
                         api_content=content,
                     )
+        
 
 
 def append_to_watchlist(directory, base_currency, quote_currency):

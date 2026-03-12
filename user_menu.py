@@ -15,6 +15,7 @@ import sys
 from pathlib import Path
 import csv
 from pprint import pprint
+import shutil
 
 
 def print_user_menu(username: str) -> None:
@@ -186,7 +187,8 @@ def print_rates(data: dict[str, dict], base_currency: str, quote_currency: str) 
   #   Date           Prices     
 --------------------------------------------""")
     for index, (date, rates) in enumerate(data.items(), 1):
-        print(f"  {index}   {date}     {rates[quote_currency]}")
+        print(f"  {index:<2}   {date}     {rates[quote_currency]:.2f}")
+    print("--------------------------------------------\n")
 
 
 def update_price_menu(task: str, username: str):
@@ -210,6 +212,7 @@ def update_price_menu(task: str, username: str):
             update_prices(directory=username)
         elif task == "2":
             update_symbol(directory=username)
+            clear_terminal()
         prompt_again = True
 
 
@@ -268,8 +271,10 @@ def watchlist(username, task):
             print_watchlist(username, "Watchlist")
         elif task == "2":
             add_symbol(username)
+            clear_terminal()
         elif task == "3":
             remove_symbol(username)
+            clear_terminal()
         prompt_again = True
 
 
@@ -286,12 +291,15 @@ def remove_symbol(directory):
     content: list = read_file(
         Path(account_files_path(directory).joinpath("Prices.csv"))
     )
-    selection = int(get_string("\nChoice: ", f"^[0-{i+1}]$"))
-    if selection != i + 1:
-        symbols.pop(selection)
-        content.pop(selection)
-        rewrite_watchlist_file(directory, symbols)
-        rewrite_prices_file(directory, content)
+    try:
+        selection = int(get_string("\nChoice: ", f"^[0-{i}]?$"))
+        if selection != i + 1:
+            symbols.pop(selection)
+            content.pop(selection)
+            rewrite_watchlist_file(directory, symbols)
+            rewrite_prices_file(directory, content)
+    except ValueError:
+        pass
 
 
 def print_watchlist(username, filetype):
@@ -315,7 +323,6 @@ def print_watchlist(username, filetype):
 -------------------------------------""")
     for index, line in enumerate(symbols):
         print(f"  {index}   {line["Stocks"]}")
-    print(f"  {index+1}   Main menu")
     print("-------------------------------------\n\n")
     return symbols, file_path, index
 
@@ -337,11 +344,11 @@ def print_prices(username):
             Prices
 =====================================
               
-  #   Symbol     Price       Date           Source       
+  #     Symbol     Price       Date           Source       
 -------------------------------------------------------------------""")
     for index, line in enumerate(prices):
         print(
-            f"  {index}   {symbols[index][0]}{symbols[index][1]}     {line['price']}     {line['date']}     {line['source']}"
+            f"  {index:<3}   {symbols[index][0]}{symbols[index][1]}     {float(line['price']):.2f}        {line['date']}     {line['source']}"
         )
     print("-------------------------------------------------------------------\n\n")
     return prices, file_path, index
@@ -374,15 +381,45 @@ def account(user, task):
             print_account_submenu()
             task = prompt_task(limit=5)
         if task == "1":
+            clear_terminal()
             account_info(user)
         elif task == "2":
             change_email(user)
         elif task == "3":
             change_password(user)
         elif task == "4":
-            pass
+            delete_account_with_verification()
         get_chioce = True
-    clear_terminal()
+    clear_terminal(user)
+
+def verification(user):
+    print(f"""You are about to DELETE your account: {user['username']}
+This will remove: profile, watchlists, stored prices. This action is irreversible.""")
+    
+    password=input("\nStep 1/3 — Re-authenticate\nEnter current password: ")
+    if password == user['password']:
+        print("\nStep 2/3 — Confirm ")
+        text_verification=input("Type 'EXACTLY': ")
+        if text_verification!='EXACTLY':
+            return False
+        
+        text_verification=input("Type 'DELETE' to confirm: ")
+        if text_verification != 'DELETE':
+            return False
+        
+        print("\nStep 3/3 — Final confirmation")
+        if prompt_confirmation():
+            return True
+         
+def delete_account_with_verification(user):
+    if verification(user):
+        user_path=Path(account_files_path(user['username']))
+        shutil.rmtree(user_path)
+        clear_terminal()
+        print("Deleting account...\n")
+    else:
+        clear_terminal()
+        print("VERIFICATION FAILED\n")
 
 
 def print_account_submenu():
@@ -427,7 +464,8 @@ def change_password(user):
         None (user dict modified in-place).
     """
     while True:
-        new_password = get_string("New Password: ", r".{3,24}").strip()
+        new_password = get_string("New Password: ", r"(.{3,24})?").strip()
+        clear_terminal()
         if new_password == "":
             break
         repeated_password = input("Enter the new password again: ").strip()
@@ -448,9 +486,13 @@ def account_info(user):
     Returns:
         None
     """
+    print(f"""=====================================
+        Acount Information
+=====================================""")
     print(
-        f"\nUsername:{user["username"]}\nPassword:{user["password"]}\nEmail:{user["email"]}\nDate:{user["date"]}"
+        f"Username : {user["username"]}\nEmail    : {user["email"]}\nCreated  : {user["date"]}"
     )
+    print("----------------------------------------\n")
 
 
 if __name__ == "__main__":
