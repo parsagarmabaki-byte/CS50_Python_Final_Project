@@ -1,5 +1,5 @@
 from login_management import get_string, read_file, enter_email, acount_files_path
-from API_management import add_symbol, clear_terminal, get_confirmation, update_prices,update_symbol_data,group_symbols,clearing_writing_watchlist,appending_Prices,clearing_writing_content
+from API_management import add_symbol, clear_terminal, get_confirmation, update_prices,update_symbol_data,group_symbols,clearing_writing_watchlist,get_task,clearing_writing_content,get_currency_data
 import sys
 from pathlib import Path
 import csv
@@ -23,8 +23,8 @@ def print_user_menu(username: str) -> None:
    2.2) Update one symbol
 
 3) View prices
-   3.1) Show last N records for a symbol
-   3.2) Show prices for date range (optional)
+   3.1) Show prices for date range 
+   3.2) Show Watchlist prices
 
 4) Summary / Analysis
    4.1) Summary (7 days)
@@ -62,7 +62,7 @@ def get_choice():
     while True:
         choice: tuple = get_string(
             "Choice: ",
-            r"^(?:(1)(?:\.?([123]))?|(2)(?:\.([12]))?|(3)(?:\.([12]))?|(4)(?:\.([123]))?|(5)(?:\.([12]))?|(6)(?:\.([1234]))?|([0Q]))$",
+            r"^(?:(1)(?:\.?([123]))?|(2)(?:\.([12]))?|(3)(?:\.([123]))?|(4)(?:\.([12]))?|(5)(?:\.([12]))?|(6)(?:\.([1234]))?|([0Q]))$",
             get_groups=True,
         )
         if choice[0] == "Q":
@@ -79,13 +79,50 @@ def menu(user, submenu, task):
     elif submenu == "2":
         update_price_menu(task, user["username"])
     elif submenu == "3":
-        view_prices(task)
+        view_prices(task,user['username'])
     elif submenu == "4":
         summary_analysis(task)
     elif submenu == "5":
         export_data(task)
     elif submenu == "6":
         acount(user, task)
+
+
+def view_prices(task,username):
+    clear_terminal()
+    get_choice = False
+    while task != "4":
+        if get_choice is True or task is None:
+            print_view_prices_submenu()
+            task = get_task(limit=3)
+            clear_terminal()
+        if task == "1":
+            base_currency,qoute_currency,data=get_currency_data()
+            print_rates(data,base_currency,qoute_currency)
+        elif task == "2":
+            print_prices(username)
+        get_choice = True
+
+
+def print_view_prices_submenu():
+    print("""View Prices
+    1) Show prices for date range (optional)
+    2) Show Watchlist prices
+    3) Main options
+""")
+
+
+def print_rates(data,base_currency,quote_currency):
+    print(f"""
+=====================================
+             {base_currency}/{quote_currency}
+=====================================
+              
+  #   Date           Prices     
+--------------------------------------------""")
+    for i,(date,rates) in enumerate(data.items(),1):
+        print(f"  {i}   {date}     {rates[quote_currency]}")
+    
 
 
 def update_price_menu(task, username):
@@ -100,8 +137,6 @@ def update_price_menu(task, username):
             update_prices(directory=username)
         elif task == "2":
             update_symbol(directory=username)
-        elif task == "3":
-            ...
         get_choice = True
 
 def update_symbol(directory):
@@ -125,7 +160,8 @@ def print_update_price_submenu():
     print("""2) Update prices
     1) Update all watchlist symbols (latest)
     2) Update one symbol
-          """)
+    3) Main options
+    """)
 
 
 def watchlist(username, task):
@@ -172,6 +208,21 @@ def print_watchlist(username, filetype):
     print("-------------------------------------\n\n")
     return symbols, file_path, i
 
+def print_prices(username):
+    file_path = Path(acount_files_path(username).joinpath("Prices.csv"))
+    prices=read_file(file_path)
+    symbols=group_symbols(prices)
+    print(f"""
+=====================================
+            Prices
+=====================================
+              
+  #   Symbol     Price       Date           Source       
+-------------------------------------------------------------------""")
+    for i, line in enumerate(prices):
+        print(f"  {i}   {symbols[i][0]}{symbols[i][1]}     {line['price']}     {line['date']}     {line['source']}")
+    print("-------------------------------------------------------------------\n\n")
+    return prices, file_path, i
 
 def print_watchlist_submenu():
     print("""1) Watchlist
@@ -199,10 +250,6 @@ def acount(user, task):
             pass
         get_chioce = True
     clear_terminal()
-
-
-def get_task(limit):
-    return get_string("Choice: ", f"^[1-{limit}]$")
 
 
 def print_acount_submenu():

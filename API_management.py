@@ -4,6 +4,7 @@ import csv, os
 from pathlib import Path
 import re
 from pprint import pprint 
+from datetime import date,timedelta
 
 
 def frankfurter_api(base="USD", symbols=None, start_date=None, end_date=None):
@@ -106,7 +107,6 @@ def update_symbol_data(base_currency,quote_currency):
     return content['rates'][quote_currency],content['date']
 
 
-
 def appending_Prices(directory, base_currency, quote_currency, api_content):
     with open(
         Path(acount_files_path(directory)).joinpath("Prices.csv"),
@@ -123,6 +123,7 @@ def appending_Prices(directory, base_currency, quote_currency, api_content):
             }
         )
 
+
 def clearing_writing_content(directory,content):
     with open (Path(acount_files_path(directory).joinpath("Prices.csv")),'w',newline='') as file:
             writer=csv.DictWriter(file,fieldnames=['symbol','price','date','source'])
@@ -135,12 +136,14 @@ def clearing_writing_content(directory,content):
                     'source':element['source']
                 })
 
+
 def clearing_writing_watchlist(directory,symbols):
     with open(Path(acount_files_path(directory).joinpath("Watchlist.csv")),'w',newline='',) as file:
             writer = csv.DictWriter(file, fieldnames=["Stocks"])
             writer.writeheader()
             for symbol in symbols:
                 writer.writerow({"Stocks": symbol["Stocks"]})
+
 
 def get_currencies():
     currencies: list = ["USD", "EUR", "GBP", "SEK", "DKK", "NOK"]
@@ -161,5 +164,49 @@ def get_confirmation():
     return input("Are You Sure: ").lower().strip() in ["yes", "yeah", "ja", "are"]
 
 
+def get_currency_data():
+    base_currency, quote_currency=get_currencies()
+    clear_terminal()
+    print_currency_data_submenu(base_currency,quote_currency)
+    task=get_task(3)
+    end_date=date.today().isoformat()
+    if task == '1':
+        days=int(get_string("Enter the range of days:",r"^\d\d?$"))
+        start_date=last_n_day(total_days=days)
+    elif task == '2':
+        start_date=last_n_day(total_days=7)
+    elif task == '3':
+        start_date = get_string("Enter start date (YYYY-MM-DD): ",r"^\d{4}-\d\d-\d\d$")
+        end_date = get_string("Enter end date press enter to skip: ",r"^(\d{4}-\d\d-\d\d)?$")
+        if end_date == '':
+            end_date=None
+    content=frankfurter_api(base_currency,quote_currency,start_date,end_date)
+    return base_currency,quote_currency,content['rates']
+    
+
+def print_currency_data_submenu(base_currency,quote_currency):
+     print(f"""Show prices for a symbol
+Symbol: {base_currency}{quote_currency}
+
+Choose range option:
+  1) Last n days (buisness days buffer)
+  2) Last week (7 business days buffer)
+  3) Enter start date (YYYY-MM-DD), optional end date
+  4) Back
+""")
+
+def last_n_day(total_days):
+   today=date.today()
+   while total_days != 0:
+       today-=timedelta(days=1)
+       if today.weekday() in [5,6]:
+           continue
+       total_days-=1
+   return today
+       
+def get_task(limit):
+    return get_string("Choice: ", f"^[1-{limit}]$")
+
 if __name__ == "__main__":
-    add_symbol("Parsa Garmabaki")
+    get_currency_data()
+    # print(last_n_day(7))
