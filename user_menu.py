@@ -326,7 +326,7 @@ def print_watchlist(username, filetype) -> tuple | None:
     file_path = Path(account_files_path(username).joinpath("Watchlist.csv"))
     symbols = read_file(file_path)
     if not symbols:
-        return None,None,None
+        return None, None, None
     print(f"""
 =====================================
             {filetype}
@@ -359,7 +359,7 @@ def print_prices(username) -> tuple | None:
         print("""=====================================
         FILES ARE EMPTY
 =====================================\n""")
-        return None,None,None
+        return None, None, None
     symbols = group_symbols(prices)
     print(f"""
 =====================================
@@ -397,7 +397,7 @@ def account(user, task):
         None
     """
     clear_terminal()
-    get_chioce:bool = False
+    get_chioce: bool = False
     while task != "5":
         if get_chioce is True or task is None:
             print_account_submenu()
@@ -415,6 +415,7 @@ def account(user, task):
         get_chioce = True
     clear_terminal()
 
+
 def verification(user) -> bool:
     """Perform three-step verification before removing an account.
 
@@ -431,22 +432,23 @@ def verification(user) -> bool:
     """
     print(f"""You are about to DELETE your account: {user['username']}
 This will remove: profile, watchlists, stored prices. This action is irreversible.""")
-    
-    password=input("\nStep 1/3 — Re-authenticate\nEnter current password: ")
-    if password == user['password']:
+
+    password = input("\nStep 1/3 — Re-authenticate\nEnter current password: ")
+    if password == user["password"]:
         print("\nStep 2/3 — Confirm ")
-        text_verification=input("Type 'EXACTLY': ")
-        if text_verification!='EXACTLY':
+        text_verification = input("Type 'EXACTLY': ")
+        if text_verification != "EXACTLY":
             return False
-        
-        text_verification=input("Type 'DELETE' to confirm: ")
-        if text_verification != 'DELETE':
+
+        text_verification = input("Type 'DELETE' to confirm: ")
+        if text_verification != "DELETE":
             return False
-        
+
         print("\nStep 3/3 — Final confirmation")
         if prompt_confirmation():
             return True
-         
+
+
 def delete_account_with_verification(user) -> bool:
     """Delete the given user account after successful verification.
 
@@ -460,7 +462,7 @@ def delete_account_with_verification(user) -> bool:
         bool: ``True`` if deletion occurred, ``False`` if verification failed.
     """
     if verification(user):
-        user_path=Path(account_files_path(user['username']))
+        user_path = Path(account_files_path(user["username"]))
         shutil.rmtree(user_path)
         clear_terminal()
         print("Deleting account...\n")

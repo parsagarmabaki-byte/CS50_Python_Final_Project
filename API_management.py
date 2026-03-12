@@ -88,7 +88,6 @@ def add_symbol(username):
                     )
 
 
-
 def append_to_watchlist(directory, base_currency, quote_currency):
     """Append a forex symbol string to the watchlist CSV.
 

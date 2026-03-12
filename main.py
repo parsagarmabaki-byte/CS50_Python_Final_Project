@@ -32,7 +32,7 @@ def main() -> None:
                 registered_accounts.pop(user_index)
             else:
                 registered_accounts = update_user_info(
-                registered_accounts, user_index, updated_user
+                    registered_accounts, user_index, updated_user
                 )
             rewrite_account_list(registered_accounts)
             times_runned += 1
