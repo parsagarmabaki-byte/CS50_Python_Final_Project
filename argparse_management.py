@@ -1,15 +1,15 @@
 from argparse import ArgumentParser, Namespace
-from login_management import acounts_path, read_file, find_acount
+from login_management import accounts_path, read_file, find_account
 
 
-def argparse_managment():
-    args = get_commandline()
+def argparse_management():
+    args = parse_command_line()
     if args is not None:
         return check_login(args.username, args.password)
     return None, None, None
 
 
-def get_commandline():
+def parse_command_line():
     parser = ArgumentParser()
     parser.add_argument(
         "-u", "--username", type=str, help="Enter the username for login"
@@ -24,10 +24,10 @@ def get_commandline():
 
 
 def check_login(username, password):
-    registred_acounts: list = read_file(file=acounts_path())
-    user_acount, user_num = find_acount(username, password, registred_acounts)
-    return user_acount, user_num, registred_acounts
+    registered_accounts: list = read_file(file=accounts_path())
+    user_account, user_index = find_account(username, password, registered_accounts)
+    return user_account, user_index, registered_accounts
 
 
 if __name__ == "__main__":
-    print(argparse_managment())
+    print(argparse_management())

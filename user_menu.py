@@ -1,5 +1,16 @@
-from login_management import get_string, read_file, enter_email, acount_files_path
-from API_management import add_symbol, clear_terminal, get_confirmation, update_prices,update_symbol_data,group_symbols,clearing_writing_watchlist,get_task,clearing_writing_content,get_currency_data
+from login_management import get_string, read_file, enter_email, account_files_path
+from API_management import (
+    add_symbol,
+    clear_terminal,
+    prompt_confirmation,
+    update_prices,
+    update_symbol_data,
+    group_symbols,
+    rewrite_watchlist_file,
+    prompt_task,
+    rewrite_prices_file,
+    get_currency_data,
+)
 import sys
 from pathlib import Path
 import csv
@@ -7,6 +18,14 @@ from pprint import pprint
 
 
 def print_user_menu(username: str) -> None:
+    """Print the main dashboard menu for the given user.
+
+    Args:
+        username (str): the name of the currently logged-in user.
+
+    Returns:
+        None: this function only prints to stdout.
+    """
     menu = f"""
 ==============================
  MarketWatch — User Dashboard
@@ -48,63 +67,99 @@ Q) Quit program
     print(menu)
 
 
-def user_menu(user):
+def user_menu(user:dict)->dict:
+    """Run the interactive user menu loop.
+
+    Args:
+        user (dict): dictionary with user information (username, email, etc.).
+
+    Returns:
+        dict: possibly updated user dictionary after menu actions.
+    """
     submenu: str = None
     task: str = None
     while submenu != "0":
         print_user_menu(user["username"])
-        submenu, task = get_choice()
-        menu(user, submenu, task)
+        submenu, task = prompt_choice()
+        dispatch_menu(user, submenu, task)
     return user
 
 
-def get_choice():
+def prompt_choice() -> tuple[str, str | None]:
+    """Prompt the user for a main menu choice and optional subtask.
+
+    Returns:
+        tuple[str, str|None]: the selected menu key and optional subtask identifier.
+    """
     while True:
-        choice: tuple = get_string(
+        raw_choice: tuple = get_string(
             "Choice: ",
             r"^(?:(1)(?:\.?([123]))?|(2)(?:\.([12]))?|(3)(?:\.([123]))?|(4)(?:\.([12]))?|(5)(?:\.([12]))?|(6)(?:\.([1234]))?|([0Q]))$",
             get_groups=True,
         )
-        if choice[0] == "Q":
+        if raw_choice[0] == "Q":
             sys.exit("System Exited")
-        if len(choice) == 2:
-            return choice[0], choice[1]
+        if len(raw_choice) == 2:
+            return raw_choice[0], raw_choice[1]
         else:
-            return choice[0], None
+            return raw_choice[0], None
 
 
-def menu(user, submenu, task):
+def dispatch_menu(user:dict, submenu:str, task:str|None)->None:
+    """Dispatch the chosen submenu action.
+
+    Args:
+        user (dict): current user info.
+        submenu (str): top-level menu selection.
+        task (str|None): secondary selection within submenu.
+
+    Returns:
+        None
+    """
     if submenu == "1":
         watchlist(user["username"], task)
     elif submenu == "2":
         update_price_menu(task, user["username"])
     elif submenu == "3":
-        view_prices(task,user['username'])
+        view_prices_menu(task, user["username"])
     elif submenu == "4":
         summary_analysis(task)
     elif submenu == "5":
         export_data(task)
     elif submenu == "6":
-        acount(user, task)
+        account(user, task)
 
 
-def view_prices(task,username):
+def view_prices_menu(task:str, username:str)->None:
+    """Handle the "View prices" submenu loop.
+
+    Args:
+        task (str): current subtask or None.
+        username (str): the user's name (used for file paths).
+
+    Returns:
+        None
+    """
     clear_terminal()
-    get_choice = False
-    while task != "4":
-        if get_choice is True or task is None:
+    prompt_again:bool = False
+    while task != "3":
+        if prompt_again is True or task is None:
             print_view_prices_submenu()
-            task = get_task(limit=3)
+            task = prompt_task(limit=3)
             clear_terminal()
         if task == "1":
-            base_currency,qoute_currency,data=get_currency_data()
-            print_rates(data,base_currency,qoute_currency)
+            base_currency: str
+            quote_currency: str
+            data: dict[str, dict]
+            base_currency, quote_currency, data = get_currency_data()
+            print_rates(data, base_currency, quote_currency)
         elif task == "2":
             print_prices(username)
-        get_choice = True
+        prompt_again = True
 
 
-def print_view_prices_submenu():
+def print_view_prices_submenu()->None:
+    """Display submenu options for viewing prices."""
     print("""View Prices
     1) Show prices for date range (optional)
     2) Show Watchlist prices
@@ -112,7 +167,17 @@ def print_view_prices_submenu():
 """)
 
 
-def print_rates(data,base_currency,quote_currency):
+def print_rates(data:dict[str, dict], base_currency:str, quote_currency:str)->None:
+    """Print fetched currency rates in tabular form.
+
+    Args:
+        data (dict[str, dict]): mapping dates to rate dictionaries.
+        base_currency (str): base currency code.
+        quote_currency (str): quote currency code.
+
+    Returns:
+        None
+    """
     print(f"""
 =====================================
              {base_currency}/{quote_currency}
@@ -120,43 +185,61 @@ def print_rates(data,base_currency,quote_currency):
               
   #   Date           Prices     
 --------------------------------------------""")
-    for i,(date,rates) in enumerate(data.items(),1):
-        print(f"  {i}   {date}     {rates[quote_currency]}")
-    
+    for index, (date, rates) in enumerate(data.items(), 1):
+        print(f"  {index}   {date}     {rates[quote_currency]}")
 
 
-def update_price_menu(task, username):
+def update_price_menu(task:str, username:str):
+    """Manage the "Update prices" submenu loop.
+
+    Args:
+        task (str): current subtask or None.
+        username (str): the user's name.
+
+    Returns:
+        None
+    """
     clear_terminal()
-    get_choice = False
+    prompt_again = False
     while task != "3":
-        if get_choice is True or task is None:
+        if prompt_again is True or task is None:
             print_update_price_submenu()
-            task = get_task(limit=3)
+            task = prompt_task(limit=3)
             clear_terminal()
         if task == "1":
             update_prices(directory=username)
         elif task == "2":
             update_symbol(directory=username)
-        get_choice = True
+        prompt_again = True
+
 
 def update_symbol(directory):
-    currencies,file_path,i=print_watchlist(directory,"Watchlist")
-    choice = int(get_string("\nChoice: ", f"^[0-{i+1}]$"))
-    if choice != i+1:
-        symbols=group_symbols([currencies[choice]],dict_value="Stocks")
-        base_currency,quote_currency=symbols[0]
-        price,date=update_symbol_data(base_currency,quote_currency)
+    """Update a single symbol's price in the user's price file.
 
-        prices_list=read_file(Path(acount_files_path(directory).joinpath("Prices.csv")))
-        prices_list[choice]['price']=price
-        prices_list[choice]['date']=date
+    Args:
+        directory (str): the username used to locate files.
 
-        clearing_writing_content(directory,prices_list)
-            
+    Returns:
+        None
+    """
+    currencies, file_path, i = print_watchlist(directory, "Watchlist")
+    selection = int(get_string("\nChoice: ", f"^[0-{i+1}]$"))
+    if selection != i + 1:
+        symbols = group_symbols([currencies[selection]], dict_value="Stocks")
+        base_currency, quote_currency = symbols[0]
+        price, date = update_symbol_data(base_currency, quote_currency)
 
+        prices_list = read_file(
+            Path(account_files_path(directory).joinpath("Prices.csv"))
+        )
+        prices_list[selection]["price"] = price
+        prices_list[selection]["date"] = date
+
+        rewrite_prices_file(directory, prices_list)
 
 
 def print_update_price_submenu():
+    """Display the submenu for the price update options."""
     print("""2) Update prices
     1) Update all watchlist symbols (latest)
     2) Update one symbol
@@ -165,12 +248,21 @@ def print_update_price_submenu():
 
 
 def watchlist(username, task):
+    """Handle the watchlist submenu actions.
+
+    Args:
+        username (str): user identifier.
+        task (str): selected submenu option or None.
+
+    Returns:
+        None
+    """
     clear_terminal()
-    get_choice = False
+    prompt_again = False
     while task != "4":
-        if get_choice is True or task is None:
+        if prompt_again is True or task is None:
             print_watchlist_submenu()
-            task = get_task(limit=4)
+            task = prompt_task(limit=4)
             clear_terminal()
         if task == "1":
             print_watchlist(username, "Watchlist")
@@ -178,22 +270,39 @@ def watchlist(username, task):
             add_symbol(username)
         elif task == "3":
             remove_symbol(username)
-        get_choice = True
+        prompt_again = True
 
 
 def remove_symbol(directory):
+    """Remove a symbol from the user's watchlist and prices.
+
+    Args:
+        directory (str): the username used internally as folder name.
+
+    Returns:
+        None
+    """
     symbols, file_path, i = print_watchlist(directory, "Remove symbol")
-    content:list=read_file(Path(acount_files_path(directory).joinpath("Prices.csv")))
-    choice = int(get_string("\nChoice: ", f"^[0-{i+1}]$"))
-    if choice != i + 1:
-        symbols.pop(choice)
-        content.pop(choice)
-        clearing_writing_watchlist(directory,symbols)    
-        clearing_writing_content(directory,content)
+    content: list = read_file(Path(account_files_path(directory).joinpath("Prices.csv")))
+    selection = int(get_string("\nChoice: ", f"^[0-{i+1}]$"))
+    if selection != i + 1:
+        symbols.pop(selection)
+        content.pop(selection)
+        rewrite_watchlist_file(directory, symbols)
+        rewrite_prices_file(directory, content)
 
 
 def print_watchlist(username, filetype):
-    file_path = Path(acount_files_path(username).joinpath("Watchlist.csv"))
+    """Print the user's watchlist to the console.
+
+    Args:
+        username (str): account name.
+        filetype (str): title to display (e.g. "Watchlist").
+
+    Returns:
+        tuple[list, Path, int]: symbols list, path to csv, last index printed.
+    """
+    file_path = Path(account_files_path(username).joinpath("Watchlist.csv"))
     symbols = read_file(file_path)
     print(f"""
 =====================================
@@ -202,16 +311,25 @@ def print_watchlist(username, filetype):
               
   #   Symbol       
 -------------------------------------""")
-    for i, line in enumerate(symbols):
-        print(f"  {i}   {line["Stocks"]}")
-    print(f"  {i+1}   Main menu")
+    for index, line in enumerate(symbols):
+        print(f"  {index}   {line["Stocks"]}")
+    print(f"  {index+1}   Main menu")
     print("-------------------------------------\n\n")
-    return symbols, file_path, i
+    return symbols, file_path, index
+
 
 def print_prices(username):
-    file_path = Path(acount_files_path(username).joinpath("Prices.csv"))
-    prices=read_file(file_path)
-    symbols=group_symbols(prices)
+    """Display prices stored for the user.
+
+    Args:
+        username (str): account identifier.
+
+    Returns:
+        tuple[list, Path, int]: loaded prices list, file path, last index.
+    """
+    file_path = Path(account_files_path(username).joinpath("Prices.csv"))
+    prices = read_file(file_path)
+    symbols = group_symbols(prices)
     print(f"""
 =====================================
             Prices
@@ -219,12 +337,16 @@ def print_prices(username):
               
   #   Symbol     Price       Date           Source       
 -------------------------------------------------------------------""")
-    for i, line in enumerate(prices):
-        print(f"  {i}   {symbols[i][0]}{symbols[i][1]}     {line['price']}     {line['date']}     {line['source']}")
+    for index, line in enumerate(prices):
+        print(
+            f"  {index}   {symbols[index][0]}{symbols[index][1]}     {line['price']}     {line['date']}     {line['source']}"
+        )
     print("-------------------------------------------------------------------\n\n")
-    return prices, file_path, i
+    return prices, file_path, index
+
 
 def print_watchlist_submenu():
+    """Print options for managing the watchlist."""
     print("""1) Watchlist
     1) View watchlist
     2) Add symbol (e.g., FX:USDSEK)
@@ -233,15 +355,24 @@ def print_watchlist_submenu():
           """)
 
 
-def acount(user, task):
+def account(user, task):
+    """Handle account-related menu selections.
+
+    Args:
+        user (dict): current user data.
+        task (str): submenu task or None.
+
+    Returns:
+        None
+    """
     clear_terminal()
     get_chioce = False
     while task != "5":
         if get_chioce is True or task is None:
-            print_acount_submenu()
-            task = get_task(limit=5)
+            print_account_submenu()
+            task = prompt_task(limit=5)
         if task == "1":
-            acount_info(user)
+            account_info(user)
         elif task == "2":
             change_email(user)
         elif task == "3":
@@ -252,7 +383,8 @@ def acount(user, task):
     clear_terminal()
 
 
-def print_acount_submenu():
+def print_account_submenu():
+    """Display account menu options."""
     print("""6) Account
    1) Show account info (username/email)
    2) Change email (optional)
@@ -263,6 +395,14 @@ def print_acount_submenu():
 
 
 def change_email(user):
+    """Prompt the user to update their email address.
+
+    Args:
+        user (dict): contains existing email to replace.
+
+    Returns:
+        None (user dict modified in-place).
+    """
     while True:
         new_email = enter_email()
         if new_email is None:
@@ -270,12 +410,20 @@ def change_email(user):
         print(
             f"Old Email: {user["email"]}\nNew Email: {new_email}\n\nDo you want to change?"
         )
-        if get_confirmation():
+        if prompt_confirmation():
             user["email"] = new_email
             break
 
 
 def change_password(user):
+    """Interactively change the user's password.
+
+    Args:
+        user (dict): user data to update.
+
+    Returns:
+        None (user dict modified in-place).
+    """
     while True:
         new_password = get_string("New Password: ", r".{3,24}").strip()
         if new_password == "":
@@ -284,12 +432,20 @@ def change_password(user):
         if new_password != repeated_password:
             print("\nPASSWORD DONT MATCHED\n")
             continue
-        if get_confirmation():
+        if prompt_confirmation():
             user["password"] = new_password
             break
 
 
-def acount_info(user):
+def account_info(user):
+    """Print the account information for the given user dictionary.
+
+    Args:
+        user (dict): must contain username, password, email, date.
+
+    Returns:
+        None
+    """
     print(
         f"\nUsername:{user["username"]}\nPassword:{user["password"]}\nEmail:{user["email"]}\nDate:{user["date"]}"
     )
