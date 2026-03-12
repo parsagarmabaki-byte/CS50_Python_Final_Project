@@ -217,7 +217,6 @@ def update_price_menu(task: str, username: str):
             update_prices(directory=username)
         elif task == "2":
             update_symbol(directory=username)
-            clear_terminal()
         prompt_again = True
 
 
@@ -231,6 +230,8 @@ def update_symbol(directory):
         None
     """
     currencies, file_path, i = print_watchlist(directory, "Watchlist")
+    if currencies is None and file_path is None and i is None:
+        return None
     selection = int(get_string("\nChoice: ", f"^[0-{i+1}]$"))
     if selection != i + 1:
         symbols = group_symbols([currencies[selection]], dict_value="Stocks")
@@ -279,7 +280,6 @@ def watchlist(username, task):
             clear_terminal()
         elif task == "3":
             remove_symbol(username)
-            clear_terminal()
         prompt_again = True
 
 
@@ -293,6 +293,8 @@ def remove_symbol(directory):
         None
     """
     symbols, file_path, i = print_watchlist(directory, "Remove symbol")
+    if symbols is None and file_path is None and i is None:
+        return None
     content: list = read_file(
         Path(account_files_path(directory).joinpath("Prices.csv"))
     )
@@ -307,7 +309,7 @@ def remove_symbol(directory):
         pass
 
 
-def print_watchlist(username, filetype):
+def print_watchlist(username, filetype) -> tuple | None:
     """Print the user's watchlist to the console.
 
     Args:
@@ -315,10 +317,16 @@ def print_watchlist(username, filetype):
         filetype (str): title to display (e.g. "Watchlist").
 
     Returns:
-        tuple[list, Path, int]: symbols list, path to csv, last index printed.
+        tuple | None: when data is present returns ``(symbols, file_path,
+        last_index)`` where ``symbols`` is a list of dicts, ``file_path`` is a
+        :class:`pathlib.Path` to the CSV, and ``last_index`` is the last
+        printed row index.  If the underlying CSV is empty or missing the
+        function prints a warning message and returns ``None``.
     """
     file_path = Path(account_files_path(username).joinpath("Watchlist.csv"))
     symbols = read_file(file_path)
+    if not symbols:
+        return None,None,None
     print(f"""
 =====================================
             {filetype}
@@ -332,17 +340,26 @@ def print_watchlist(username, filetype):
     return symbols, file_path, index
 
 
-def print_prices(username):
+def print_prices(username) -> tuple | None:
     """Display prices stored for the user.
 
     Args:
         username (str): account identifier.
 
     Returns:
-        tuple[list, Path, int]: loaded prices list, file path, last index.
+        tuple | None: when price records exist returns ``(prices, file_path,
+        last_index)`` where ``prices`` is a list of dicts.  If the CSV file is
+        empty or cannot be read the function prints an "FILES ARE EMPTY" message
+        and returns ``None`` to allow callers to handle the situation gracefully.
     """
     file_path = Path(account_files_path(username).joinpath("Prices.csv"))
     prices = read_file(file_path)
+    if not prices:
+        clear_terminal()
+        print("""=====================================
+        FILES ARE EMPTY
+=====================================\n""")
+        return None,None,None
     symbols = group_symbols(prices)
     print(f"""
 =====================================

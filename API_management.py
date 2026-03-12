@@ -86,7 +86,7 @@ def add_symbol(username):
                         quote_currency=quote_currency,
                         api_content=content,
                     )
-        
+
 
 
 def append_to_watchlist(directory, base_currency, quote_currency):
@@ -116,10 +116,14 @@ def update_prices(directory):
         directory (str): username directory.
 
     Returns:
-        None
+        None: this function rewrites the prices CSV with current data.  If the
+        prices file is empty a message is displayed and the function exits
+        early without modifying any files.
     """
     file_path = Path(account_files_path(directory).joinpath("Prices.csv"))
     currencies = read_file(file_path)
+    if not currencies:
+        return None
     symbols: list = group_symbols(currencies)
     updated_content = update_data(symbols)
     clear_prices_file(directory)

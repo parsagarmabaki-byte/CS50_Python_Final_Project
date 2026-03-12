@@ -1,7 +1,7 @@
 from email_validator import validate_email, EmailNotValidError
 import sys, csv, datetime
 from pathlib import Path
-import re, csv
+import re, csv, os
 
 
 class Account:
@@ -211,6 +211,11 @@ def read_file(file) -> list:
         reader = csv.DictReader(f)
         for acc in reader:
             accounts.append(acc)
+    if not accounts:
+        os.system("cls")
+        print("""=====================================
+        FILES ARE EMPTY
+=====================================\n""")
     return accounts
 
 
