@@ -67,7 +67,7 @@ Q) Quit program
     print(menu)
 
 
-def user_menu(user:dict)->dict:
+def user_menu(user: dict) -> dict:
     """Run the interactive user menu loop.
 
     Args:
@@ -105,7 +105,7 @@ def prompt_choice() -> tuple[str, str | None]:
             return raw_choice[0], None
 
 
-def dispatch_menu(user:dict, submenu:str, task:str|None)->None:
+def dispatch_menu(user: dict, submenu: str, task: str | None) -> None:
     """Dispatch the chosen submenu action.
 
     Args:
@@ -130,7 +130,7 @@ def dispatch_menu(user:dict, submenu:str, task:str|None)->None:
         account(user, task)
 
 
-def view_prices_menu(task:str, username:str)->None:
+def view_prices_menu(task: str, username: str) -> None:
     """Handle the "View prices" submenu loop.
 
     Args:
@@ -141,7 +141,7 @@ def view_prices_menu(task:str, username:str)->None:
         None
     """
     clear_terminal()
-    prompt_again:bool = False
+    prompt_again: bool = False
     while task != "3":
         if prompt_again is True or task is None:
             print_view_prices_submenu()
@@ -158,7 +158,7 @@ def view_prices_menu(task:str, username:str)->None:
         prompt_again = True
 
 
-def print_view_prices_submenu()->None:
+def print_view_prices_submenu() -> None:
     """Display submenu options for viewing prices."""
     print("""View Prices
     1) Show prices for date range (optional)
@@ -167,7 +167,7 @@ def print_view_prices_submenu()->None:
 """)
 
 
-def print_rates(data:dict[str, dict], base_currency:str, quote_currency:str)->None:
+def print_rates(data: dict[str, dict], base_currency: str, quote_currency: str) -> None:
     """Print fetched currency rates in tabular form.
 
     Args:
@@ -189,7 +189,7 @@ def print_rates(data:dict[str, dict], base_currency:str, quote_currency:str)->No
         print(f"  {index}   {date}     {rates[quote_currency]}")
 
 
-def update_price_menu(task:str, username:str):
+def update_price_menu(task: str, username: str):
     """Manage the "Update prices" submenu loop.
 
     Args:
@@ -283,7 +283,9 @@ def remove_symbol(directory):
         None
     """
     symbols, file_path, i = print_watchlist(directory, "Remove symbol")
-    content: list = read_file(Path(account_files_path(directory).joinpath("Prices.csv")))
+    content: list = read_file(
+        Path(account_files_path(directory).joinpath("Prices.csv"))
+    )
     selection = int(get_string("\nChoice: ", f"^[0-{i+1}]$"))
     if selection != i + 1:
         symbols.pop(selection)

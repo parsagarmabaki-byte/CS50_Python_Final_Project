@@ -1,7 +1,7 @@
-from email_validator import validate_email,EmailNotValidError
+from email_validator import validate_email, EmailNotValidError
 import sys, csv, datetime
 from pathlib import Path
-import re,csv
+import re, csv
 
 
 class Account:
@@ -10,6 +10,7 @@ class Account:
     Attributes:
         directory (Path): base path for all user account folders.
     """
+
     directory = (
         Path("final_project")
         .resolve()
@@ -71,27 +72,6 @@ class Account:
                 )
             writer.writeheader()
 
-
-def rewrite_account_list(accounts:list):
-    """Rewrite the Accounts CSV with updated acounts.
-
-    Args:
-        accounts (list[dict])
-
-    Returns:
-        None
-    """
-    path=Path("final_project").resolve().parent.joinpath("csv_files").joinpath("Accounts.csv")
-    with open(path,'w',newline='') as file:
-        writer=csv.DictWriter(file,fieldnames=['username','password','email','date'])
-        writer.writeheader()
-        for account in accounts:
-            writer.writerow({
-                'username':account['username'],
-                'password':account['password'],
-                'email':account['email'],
-                'date':account['date']
-            })
 
 def account_files_path(username):
     """Compute the path to the given user's account directory.
@@ -164,7 +144,9 @@ def prompt_login():
         password = input("Password: ")
 
         registered_accounts: list = read_file(accounts_path())
-        user_account, account_index = find_account(username, password, registered_accounts)
+        user_account, account_index = find_account(
+            username, password, registered_accounts
+        )
     return user_account, account_index, registered_accounts
 
 

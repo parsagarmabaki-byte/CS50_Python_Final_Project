@@ -1,14 +1,23 @@
-from login_management import login_options, prompt_login, create_account,rewrite_account_list
+from login_management import login_options, prompt_login, create_account
 from user_menu import user_menu, clear_terminal
 from argparse_management import argparse_management
+from pathlib import Path
+import csv
+from typing import List, Dict
 
 
-def main():
+def main() -> None:
+    """Entry point for the application.
+
+    Orchestrates login/registration and launches the user menu loop.  The
+    function maintains an in memory list of registered accounts and updates the
+    CSV file when the active user's information changes.
+    """
     user_account, user_index, registered_accounts = argparse_management()
     times_runned = 1
     while True:
         if user_account is None or times_runned > 1:
-            # clear_terminal()
+            clear_terminal()
             choice = login_options()
             if choice == 1:
                 user_account, user_index, registered_accounts = prompt_login()
@@ -22,11 +31,56 @@ def main():
             )
             rewrite_account_list(registered_accounts)
             times_runned += 1
-        
 
-def update_user_info(registered_accounts: list, user_index: int, updated_user: dict):
+
+def update_user_info(
+    registered_accounts: List[Dict],
+    user_index: int,
+    updated_user: Dict,
+) -> List[Dict]:
+    """Replace a single user's record in the accounts list.
+
+    Args:
+        registered_accounts (List[Dict]): list of account dictionaries.
+        user_index (int): index of the account to update.
+        updated_user (Dict): modified user dict.
+
+    Returns:
+        List[Dict]: the same list, with the specified record replaced.
+    """
     registered_accounts[user_index] = updated_user
     return registered_accounts
+
+
+def rewrite_account_list(accounts: List[Dict]) -> None:
+    """Persist the provided account list back to the CSV file.
+
+    Args:
+        accounts (List[Dict]): current list of registered accounts.
+
+    Returns:
+        None: data is written to disk.
+    """
+    path = (
+        Path("final_project")
+        .resolve()
+        .parent.joinpath("csv_files")
+        .joinpath("Accounts.csv")
+    )
+    with open(path, "w", newline="") as file:
+        writer = csv.DictWriter(
+            file, fieldnames=["username", "password", "email", "date"]
+        )
+        writer.writeheader()
+        for account in accounts:
+            writer.writerow(
+                {
+                    "username": account["username"],
+                    "password": account["password"],
+                    "email": account["email"],
+                    "date": account["date"],
+                }
+            )
 
 
 if __name__ == "__main__":
