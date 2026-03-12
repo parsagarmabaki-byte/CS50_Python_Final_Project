@@ -68,21 +68,24 @@ Q) Quit program
     print(menu)
 
 
-def user_menu(user: dict) -> dict:
+def user_menu(user: dict) -> Optional[dict]:
     """Run the interactive user menu loop.
 
     Args:
         user (dict): dictionary with user information (username, email, etc.).
 
     Returns:
-        dict: possibly updated user dictionary after menu actions.
+        Optional[dict]: the (potentially modified) user dict, or ``None`` if the
+        account was deleted during the session which signals the caller to
+        terminate the program.
     """
     submenu: str = None
     task: str = None
     while submenu != "0":
         print_user_menu(user["username"])
         submenu, task = prompt_choice()
-        dispatch_menu(user, submenu, task)
+        if dispatch_menu(user, submenu, task):
+            return None
     return user
 
 
@@ -106,7 +109,7 @@ def prompt_choice() -> tuple[str, str | None]:
             return raw_choice[0], None
 
 
-def dispatch_menu(user: dict, submenu: str, task: str | None) -> None:
+def dispatch_menu(user: dict, submenu: str, task: str | None) -> bool | None:
     """Dispatch the chosen submenu action.
 
     Args:
@@ -115,7 +118,8 @@ def dispatch_menu(user: dict, submenu: str, task: str | None) -> None:
         task (str|None): secondary selection within submenu.
 
     Returns:
-        None
+        bool | None: returns ``True`` if the user account was deleted and the
+        caller should exit; otherwise ``None``.
     """
     if submenu == "1":
         watchlist(user["username"], task)
@@ -128,7 +132,8 @@ def dispatch_menu(user: dict, submenu: str, task: str | None) -> None:
     elif submenu == "5":
         export_data(task)
     elif submenu == "6":
-        account(user, task)
+        if account(user, task):
+            return True
 
 
 def view_prices_menu(task: str, username: str) -> None:
@@ -375,7 +380,7 @@ def account(user, task):
         None
     """
     clear_terminal()
-    get_chioce = False
+    get_chioce:bool = False
     while task != "5":
         if get_chioce is True or task is None:
             print_account_submenu()
@@ -388,11 +393,25 @@ def account(user, task):
         elif task == "3":
             change_password(user)
         elif task == "4":
-            delete_account_with_verification()
+            if delete_account_with_verification(user):
+                return True
         get_chioce = True
-    clear_terminal(user)
+    clear_terminal()
 
-def verification(user):
+def verification(user) -> bool:
+    """Perform three-step verification before removing an account.
+
+    Steps:
+        1. Re-enter current password.
+        2. Type the literal word ``EXACTLY``.
+        3. Type ``DELETE`` then confirm via a yes/no prompt.
+
+    Args:
+        user (dict): current user record.
+
+    Returns:
+        bool: ``True`` only if all verification steps succeed.
+    """
     print(f"""You are about to DELETE your account: {user['username']}
 This will remove: profile, watchlists, stored prices. This action is irreversible.""")
     
@@ -411,15 +430,28 @@ This will remove: profile, watchlists, stored prices. This action is irreversibl
         if prompt_confirmation():
             return True
          
-def delete_account_with_verification(user):
+def delete_account_with_verification(user) -> bool:
+    """Delete the given user account after successful verification.
+
+    This routine removes the user's directory and associated CSV files, then
+    clears the terminal and displays a brief message.
+
+    Args:
+        user (dict): the account record to delete.
+
+    Returns:
+        bool: ``True`` if deletion occurred, ``False`` if verification failed.
+    """
     if verification(user):
         user_path=Path(account_files_path(user['username']))
         shutil.rmtree(user_path)
         clear_terminal()
         print("Deleting account...\n")
+        return True
     else:
         clear_terminal()
         print("VERIFICATION FAILED\n")
+        return False
 
 
 def print_account_submenu():

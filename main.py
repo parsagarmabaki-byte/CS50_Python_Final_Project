@@ -11,7 +11,9 @@ def main() -> None:
 
     Orchestrates login/registration and launches the user menu loop.  The
     function maintains an in memory list of registered accounts and updates the
-    CSV file when the active user's information changes.
+    CSV file when the active user's information changes.  If ``user_menu``
+    returns ``None`` (because the account was deleted) the program exits the
+    main loop.
     """
     user_account, user_index, registered_accounts = argparse_management()
     times_runned = 1
@@ -26,9 +28,12 @@ def main() -> None:
 
         if user_account:
             updated_user = user_menu(user_account)
-            registered_accounts = update_user_info(
+            if updated_user is None:
+                registered_accounts.pop(user_index)
+            else:
+                registered_accounts = update_user_info(
                 registered_accounts, user_index, updated_user
-            )
+                )
             rewrite_account_list(registered_accounts)
             times_runned += 1
 
