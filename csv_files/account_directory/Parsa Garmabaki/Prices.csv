@@ -1,4 +1,5 @@
 symbol,price,date,source
-FX:USDEUR,0.86603,2026-03-12,Frankfurter
-FX:NOKDKK,0.6697,2026-03-12,Frankfurter
-FX:EURGBP,0.86243,2026-03-12,Frankfurter
+FX:NOKDKK,0.66965,2026-03-13,Frankfurter
+FX:EURGBP,0.86503,2026-03-13,Frankfurter
+FX:USDNOK,9.7238,2026-03-13,Frankfurter
+FX:EURGBP,0.86503,2026-03-13,Frankfurter

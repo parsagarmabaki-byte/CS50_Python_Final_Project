@@ -62,7 +62,6 @@ class Account:
         Returns:
             None
         """
-        # Use newline="" so csv.writer does not insert extra blank lines on Windows
         with open(file_path, "a", newline="") as f:
             if file_type == "Watchlist":
                 writer = csv.DictWriter(f, fieldnames=["Stocks"])
