@@ -17,7 +17,8 @@ final_project/
 │   └── web.py              # FastAPI web adapter
 ├── tests/                  # Pytest tests for new architecture
 │   ├── test_repositories.py
-│   └── test_services.py
+│   ├── test_services.py
+│   └── test_web.py         # Web API integration tests
 ├── csv_files/              # Data persistence (CSV files)
 ├── login_management.py     # Legacy auth module
 ├── user_menu.py            # Legacy CLI dashboard
@@ -92,24 +93,63 @@ Start the web server:
 uvicorn final_project.web:app --reload --port 8000
 ```
 
-Available endpoints:
+#### Authentication
 
-| Method | Endpoint      | Description              |
-|--------|---------------|--------------------------|
-| GET    | `/health`     | Health check             |
-| POST   | `/register`   | Register a new user      |
+The web API uses simple token-based authentication (demo purposes):
 
-**Example: Register via HTTP**
+1. **Login** to get a token:
+   ```bash
+   curl -X POST http://127.0.0.1:8000/login \
+     -H "Content-Type: application/json" \
+     -d '{"username":"testuser","password":"secret"}'
+   ```
+   Response: `{"token": "uuid-here"}`
 
+2. **Use the token** in subsequent requests:
+   ```bash
+   curl -X GET http://127.0.0.1:8000/me/watchlist \
+     -H "Authorization: Bearer <your-token>"
+   ```
+   Or use the `X-Auth-Token` header as an alternative.
+
+#### API Endpoints
+
+| Method | Endpoint                  | Auth  | Description                    |
+|--------|---------------------------|-------|--------------------------------|
+| GET    | `/health`                 | No    | Health check                   |
+| POST   | `/register`               | No    | Register a new user            |
+| POST   | `/login`                  | No    | Login → returns auth token     |
+| POST   | `/logout`                 | Yes   | Logout (invalidate token)      |
+| GET    | `/me/watchlist`           | Yes   | List user's watchlist          |
+| POST   | `/me/watchlist`           | Yes   | Add currency symbol            |
+| DELETE | `/me/watchlist/{symbol}`  | Yes   | Remove symbol from watchlist   |
+| GET    | `/me/prices`              | Yes   | Get latest prices              |
+| POST   | `/me/prices/update`       | Yes   | Refresh all watchlist prices   |
+| GET    | `/me/prices/export`       | Yes   | Download prices as CSV         |
+
+#### Example Requests
+
+**Register a user:**
 ```bash
 curl -X POST http://127.0.0.1:8000/register \
   -H "Content-Type: application/json" \
   -d '{"username":"testuser","password":"secret","email":"test@example.com"}'
 ```
 
-Response:
-```json
-{"username": "testuser", "created": "2026-03-13"}
+**Add a currency symbol:**
+```bash
+curl -X POST http://127.0.0.1:8000/me/watchlist \
+  -H "Authorization: Bearer <your-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"base":"USD","quote":"SEK"}'
+```
+Response: `{"symbol":"FX:USDSEK","price":10.5,"date":"2026-03-13","source":"Frankfurter"}`
+
+**Export prices as CSV:**
+```bash
+curl -X GET http://127.0.0.1:8000/me/prices/export \
+  -H "Authorization: Bearer <your-token>" \
+  -o prices.csv
 ```
 
 ## Running the Legacy CLI
@@ -139,6 +179,13 @@ pytest -v
 |---------------------------|--------------------------------------|
 | `tests/test_repositories.py` | CSV repository CRUD operations    |
 | `tests/test_services.py`     | Service layer with mocked API     |
+| `tests/test_web.py`          | Web API integration tests         |
+
+**Web tests cover:**
+- Full register → login → add symbol → watchlist → prices → export → logout flow
+- Symbol removal from watchlist
+- Authentication errors (missing/invalid tokens)
+- Invalid input validation (bad currency codes)
 
 ### Test Example
 
@@ -250,6 +297,43 @@ account = account_service.register("alice", "password123", "alice@example.com")
 
 # Add currency symbol
 price_record = watchlist_service.add_symbol("alice", "USD", "SEK")
+```
+
+### Web API Pydantic Schemas
+
+**Request/Response models:**
+
+```python
+# POST /register
+class RegisterIn(BaseModel):
+    username: str
+    password: str
+    email: Optional[str] = None
+
+# POST /login
+class LoginIn(BaseModel):
+    username: str
+    password: str
+
+# POST /login response
+class TokenOut(BaseModel):
+    token: str
+
+# POST /me/watchlist
+class AddSymbolIn(BaseModel):
+    base: str    # e.g., "USD"
+    quote: str   # e.g., "SEK"
+
+# GET /me/watchlist response
+class WatchlistOut(BaseModel):
+    symbol: str  # e.g., "FX:USDSEK"
+
+# GET /me/prices response
+class PriceOut(BaseModel):
+    symbol: str
+    price: float
+    date: str
+    source: str
 ```
 
 ## License
