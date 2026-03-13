@@ -81,6 +81,8 @@ class WatchlistRepository(ABC):
     def list(self, username: str) -> List[WatchlistEntry]: ...
     @abstractmethod
     def add(self, username: str, entry: WatchlistEntry) -> None: ...
+    @abstractmethod
+    def remove(self, username: str, symbol: str) -> None: ...
 
 class CSVWatchlistRepository(WatchlistRepository):
     def __init__(self, base_dir: Path = DATA_DIR):
@@ -106,6 +108,22 @@ class CSVWatchlistRepository(WatchlistRepository):
             if not exists:
                 writer.writeheader()
             writer.writerow({"symbol": entry.symbol})
+
+    def remove(self, username: str, symbol: str):
+        p = self._path(username)
+        if not p.exists():
+            return
+        rows = []
+        with open(p, newline="") as f:
+            reader = csv.DictReader(f)
+            for r in reader:
+                rows.append(r)
+        remaining = [r for r in rows if r.get("symbol") != symbol]
+        with open(p, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["symbol"])
+            writer.writeheader()
+            for r in remaining:
+                writer.writerow({"symbol": r["symbol"]})
 
 # --- Prices repository ---
 class PricesRepository(ABC):
