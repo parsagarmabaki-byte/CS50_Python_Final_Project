@@ -1,12 +1,12 @@
 # MarketWatch — Currency Watchlist Manager
 
-A Python application for tracking currency exchange rates using the [Frankfurter API](https://www.frankfurter.app/). Features both a legacy CLI interface and a new decoupled architecture with web API support.
+A Python application for tracking currency exchange rates using the [Frankfurter API](https://www.frankfurter.app/). Features a legacy CLI, a modern FastAPI backend, and a React + TypeScript SPA frontend.
 
 ## Project Structure
 
 ```
 final_project/
-├── final_project/          # New refactored package
+├── final_project/          # Backend Python package
 │   ├── __init__.py
 │   ├── config.py           # Configuration & paths
 │   ├── models.py           # Data classes (Account, PriceRecord, WatchlistEntry)
@@ -15,7 +15,16 @@ final_project/
 │   ├── api_clients.py      # External API client (FrankfurterClient)
 │   ├── cli.py              # CLI adapter
 │   └── web.py              # FastAPI web adapter
-├── tests/                  # Pytest tests for new architecture
+├── web-client/             # React + TypeScript frontend SPA
+│   ├── src/
+│   │   ├── api/            # Axios client with auth interceptor
+│   │   ├── auth/           # Auth context (login, logout, register)
+│   │   ├── layout/         # App layout with navigation
+│   │   ├── pages/          # LoginPage, RegisterPage, Dashboard
+│   │   └── __tests__/      # Vitest tests
+│   ├── package.json
+│   └── README.md           # Frontend documentation
+├── tests/                  # Pytest tests for backend
 │   ├── test_repositories.py
 │   ├── test_services.py
 │   └── test_web.py         # Web API integration tests
@@ -164,6 +173,57 @@ This runs the full dashboard with:
 - Watchlist management (add/remove/view symbols)
 - Price updates from Frankfurter API
 - Account management (change email, password, delete account)
+
+## React Frontend (SPA)
+
+A modern single-page application built with React, TypeScript, and Tailwind CSS.
+
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+
+### Installation
+
+```bash
+cd web-client
+npm install
+```
+
+### Configuration
+
+Create `.env` file in `web-client/`:
+
+```bash
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+### Development
+
+```bash
+cd web-client
+npm run dev
+```
+
+The app will be available at `http://localhost:5173`.
+
+### Features
+
+- **Register/Login** — Token-based authentication
+- **Dashboard** — View and manage watchlist
+- **Add/Remove Symbols** — Track currency pairs (e.g., USD/SEK)
+- **Update Prices** — Fetch latest rates from Frankfurter API
+- **Export CSV** — Download price data
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+Output is in `web-client/dist/`. Deploy to any static host or serve from FastAPI.
+
+See `web-client/README.md` for full documentation.
 
 ## Testing
 
