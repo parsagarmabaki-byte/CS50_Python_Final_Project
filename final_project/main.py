@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 # main.py — Interactive launcher that provides the "full app" menu-driven CLI
+"""Interactive menu-driven CLI launcher for the final project application.
+
+This module provides a complete interactive command-line interface with
+a menu system for user registration, login, watchlist management, and
+price tracking operations.
+"""
 from __future__ import annotations
 import sys
 import logging
@@ -11,9 +17,16 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
 # Lazy imports to keep startup light
 def _get_services():
-    """
-    Returns (account_service, watch_service, prices_repo) tuple.
-    Delegates creation to final_project.cli:build_services for consistent DI.
+    """Return account and watch service instances.
+
+    Delegates creation to final_project.cli:build_services for consistent
+    dependency injection.
+
+    Returns:
+        A tuple of (AccountService, WatchlistService) instances.
+
+    Raises:
+        Exception: If services cannot be initialized.
     """
     try:
         from final_project.cli import build_services
@@ -24,31 +37,50 @@ def _get_services():
 
 
 class Session:
-    """
-    Simple in-memory session holding logged-in username.
-    """
+    """Simple in-memory session holding logged-in username."""
+
     def __init__(self):
+        """Initialize a new session with no logged-in user."""
         self.username: Optional[str] = None
 
     def login(self, username: str):
+        """Log in a user by setting the session username.
+
+        Args:
+            username: The username to log in.
+        """
         self.username = username
 
     def logout(self):
+        """Log out the current user by clearing the session username."""
         self.username = None
 
     @property
     def is_authenticated(self) -> bool:
+        """Check if a user is currently logged in.
+
+        Returns:
+            True if a user is logged in, False otherwise.
+        """
         return self.username is not None
 
 
 # ---------- UI helpers ----------
 def clear_screen():
-    """Cross-platform console clear."""
+    """Clear the console screen using a cross-platform approach.
+
+    Uses 'cls' on Windows and 'clear' on Unix-like systems.
+    """
     import os
     os.system("cls" if os.name == "nt" else "clear")
 
 
 def pause(msg: str = "Press Enter to continue..."):
+    """Pause execution and wait for user input.
+
+    Args:
+        msg: The message to display before waiting for input.
+    """
     try:
         input(msg)
     except KeyboardInterrupt:
@@ -56,6 +88,14 @@ def pause(msg: str = "Press Enter to continue..."):
 
 
 def read_nonempty(prompt: str) -> str:
+    """Read user input until a non-empty value is provided.
+
+    Args:
+        prompt: The prompt message to display.
+
+    Returns:
+        A non-empty string entered by the user.
+    """
     while True:
         v = input(prompt).strip()
         if v:
@@ -64,6 +104,11 @@ def read_nonempty(prompt: str) -> str:
 
 
 def show_header(title: str):
+    """Clear the screen and display a formatted header.
+
+    Args:
+        title: The title text to display in the header.
+    """
     clear_screen()
     print("=" * 60)
     print(f"{title}")
@@ -72,6 +117,14 @@ def show_header(title: str):
 
 # ---------- Application flows ----------
 def flow_register(account_service):
+    """Handle the user registration flow.
+
+    Prompts for username, password, and optional email, then registers
+    a new account using the account service.
+
+    Args:
+        account_service: The AccountService instance for registration.
+    """
     show_header("Register new user")
     username = read_nonempty("Username: ")
     password = read_nonempty("Password: ")
@@ -85,6 +138,15 @@ def flow_register(account_service):
 
 
 def flow_login(account_service, session: Session):
+    """Handle the user login flow.
+
+    Prompts for username and password, authenticates the user, and
+    updates the session on success.
+
+    Args:
+        account_service: The AccountService instance for authentication.
+        session: The Session object to update on successful login.
+    """
     show_header("Login")
     username = read_nonempty("Username: ")
     password = read_nonempty("Password: ")
@@ -98,6 +160,13 @@ def flow_login(account_service, session: Session):
 
 
 def flow_logout(session: Session):
+    """Handle the user logout flow.
+
+    Logs out the current user if authenticated.
+
+    Args:
+        session: The Session object to logout.
+    """
     if session.is_authenticated:
         print(f"Logging out {session.username}")
         session.logout()
@@ -107,6 +176,14 @@ def flow_logout(session: Session):
 
 
 def flow_view_watchlist(watch_service, session: Session):
+    """Handle the view watchlist flow.
+
+    Displays all watchlist entries for the currently logged-in user.
+
+    Args:
+        watch_service: The WatchlistService instance for retrieving entries.
+        session: The Session object containing the logged-in username.
+    """
     if not session.is_authenticated:
         print("You must be logged in.")
         pause()
@@ -122,6 +199,15 @@ def flow_view_watchlist(watch_service, session: Session):
 
 
 def flow_add_symbol(watch_service, session: Session):
+    """Handle the add symbol to watchlist flow.
+
+    Prompts for base and quote currencies, then adds the currency pair
+    to the user's watchlist and records the current price.
+
+    Args:
+        watch_service: The WatchlistService instance for adding symbols.
+        session: The Session object containing the logged-in username.
+    """
     if not session.is_authenticated:
         print("You must be logged in.")
         pause()
@@ -138,6 +224,14 @@ def flow_add_symbol(watch_service, session: Session):
 
 
 def flow_view_latest_prices(watch_service, session: Session):
+    """Handle the view latest prices flow.
+
+    Displays all recorded price entries for the currently logged-in user.
+
+    Args:
+        watch_service: The WatchlistService instance for retrieving prices.
+        session: The Session object containing the logged-in username.
+    """
     if not session.is_authenticated:
         print("You must be logged in.")
         pause()
@@ -153,6 +247,15 @@ def flow_view_latest_prices(watch_service, session: Session):
 
 
 def flow_update_all_prices(watch_service, session: Session):
+    """Handle the update all prices flow.
+
+    Fetches and records the latest exchange rates for all symbols in the
+    user's watchlist.
+
+    Args:
+        watch_service: The WatchlistService instance for updating prices.
+        session: The Session object containing the logged-in username.
+    """
     if not session.is_authenticated:
         print("You must be logged in.")
         pause()
@@ -180,6 +283,15 @@ def flow_update_all_prices(watch_service, session: Session):
 
 
 def flow_remove_symbol(watch_service, session: Session):
+    """Handle the remove symbol from watchlist flow.
+
+    Displays the user's watchlist and allows them to select an entry
+    to remove by index.
+
+    Args:
+        watch_service: The WatchlistService instance for managing the watchlist.
+        session: The Session object containing the logged-in username.
+    """
     # Removing is repository-specific; our CSVWatchlistRepository doesn't have delete.
     # Implement a simple remove by rewriting the watchlist CSV: we'll try to call repo directly.
     if not session.is_authenticated:
@@ -230,6 +342,14 @@ def flow_remove_symbol(watch_service, session: Session):
 
 
 def flow_export_prices(watch_service, session: Session):
+    """Handle the export prices to CSV flow.
+
+    Exports the user's latest price records to a CSV file.
+
+    Args:
+        watch_service: The WatchlistService instance for retrieving prices.
+        session: The Session object containing the logged-in username.
+    """
     if not session.is_authenticated:
         print("You must be logged in.")
         pause()
@@ -250,6 +370,11 @@ def flow_export_prices(watch_service, session: Session):
 
 
 def flow_start_web_server():
+    """Handle the start web server flow.
+
+    Prompts for host, port, and reload options, then starts the uvicorn
+    web server with the FastAPI application.
+    """
     show_header("Start web server")
     host = input("Host (default 127.0.0.1): ").strip() or "127.0.0.1"
     port_s = input("Port (default 8000): ").strip() or "8000"
@@ -281,6 +406,11 @@ def flow_start_web_server():
 
 
 def flow_health_check():
+    """Handle the health check flow.
+
+    Performs a health check by importing core modules and checking the
+    web API health endpoint.
+    """
     try:
         from final_project.web import health  # type: ignore
         res = health()
@@ -299,6 +429,14 @@ def flow_health_check():
 
 # ---------- Main menu ----------
 def main_menu_loop():
+    """Run the main interactive menu loop.
+
+    Initializes services and presents a menu of options to the user.
+    Handles user input and dispatches to the appropriate flow handlers.
+
+    Returns:
+        0 on normal exit, 1 if services fail to initialize.
+    """
     try:
         account_service, watch_service = _get_services()
     except Exception:
@@ -361,6 +499,11 @@ def main_menu_loop():
 
 # ---------- CLI entrypoint ----------
 def build_arg_parser():
+    """Build and return the argument parser for the CLI.
+
+    Returns:
+        An ArgumentParser configured with the supported command-line options.
+    """
     import argparse
     p = argparse.ArgumentParser(prog="main", description="Interactive launcher for final_project")
     p.add_argument("--demo-register", nargs=3, metavar=("username","password","email"), help="Register a demo user")
@@ -370,6 +513,17 @@ def build_arg_parser():
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Main entry point for the CLI application.
+
+    Parses command-line arguments, initializes services, handles demo
+    operations if provided, and optionally enters the interactive menu loop.
+
+    Args:
+        argv: Command-line arguments. Defaults to sys.argv[1:] if not provided.
+
+    Returns:
+        Exit code: 0 on success, 2 on startup failure.
+    """
     argv = argv if argv is not None else sys.argv[1:]
     parser = build_arg_parser()
     ns = parser.parse_args(argv)
