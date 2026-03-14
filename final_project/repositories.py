@@ -316,6 +316,16 @@ class PricesRepository(ABC):
         """
         ...
 
+    @abstractmethod
+    def remove(self, username: str, symbol: str) -> None:
+        """Remove price records for a specific symbol.
+
+        Args:
+            username: The username whose price records to update.
+            symbol: The symbol to remove.
+        """
+        ...
+
 
 class CSVPricesRepository(PricesRepository):
     """CSV-based implementation of the PricesRepository interface.
@@ -382,3 +392,22 @@ class CSVPricesRepository(PricesRepository):
         for r in records:
             out[r["symbol"]] = PriceRecord(r["symbol"], float(r["price"]), r["date"], r["source"])
         return list(out.values())
+
+    def remove(self, username: str, symbol: str) -> None:
+        """Remove price records for a specific symbol from the user's prices file.
+
+        Args:
+            username: The username whose price records to update.
+            symbol: The symbol to remove.
+        """
+        p = self._path(username)
+        if not p.exists():
+            return
+        with open(p, newline="") as f:
+            reader = csv.DictReader(f)
+            records = list(r for r in reader if r["symbol"] != symbol)
+        with open(p, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["symbol", "price", "date", "source"])
+            writer.writeheader()
+            for r in records:
+                writer.writerow({"symbol": r["symbol"], "price": r["price"], "date": r["date"], "source": r["source"]})

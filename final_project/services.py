@@ -141,3 +141,13 @@ class WatchlistService:
             A list of PriceRecord objects with the latest price for each symbol.
         """
         return self.prices_repo.list_latest(username)
+
+    def remove_symbol(self, username: str, symbol: str) -> None:
+        """Remove a symbol from a user's watchlist and delete its price records.
+
+        Args:
+            username: The username whose watchlist to update.
+            symbol: The symbol to remove (e.g., "FX:USDSEK").
+        """
+        self.watchlist_repo.remove(username, symbol)
+        self.prices_repo.remove(username, symbol)

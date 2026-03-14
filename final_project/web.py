@@ -233,7 +233,7 @@ def add_symbol(payload: AddSymbolIn, username: str = Depends(auth_user), service
 
 @app.delete("/me/watchlist/{symbol}")
 def remove_symbol(symbol: str, username: str = Depends(auth_user), services=Depends(get_services)):
-    """Remove a symbol from the user's watchlist.
+    """Remove a symbol from the user's watchlist and its price records.
 
     Args:
         symbol: The symbol to remove from the watchlist.
@@ -244,40 +244,14 @@ def remove_symbol(symbol: str, username: str = Depends(auth_user), services=Depe
         A success status object.
 
     Raises:
-        HTTPException: 400 if removal fails, 404 if watchlist not found,
-                      or 500 if the repository doesn't support removal.
+        HTTPException: 400 if removal fails.
     """
-    # best-effort removal: call repo if it supports remove, else rewrite CSV
     watch_svc = services["watch_service"]
-    repo = getattr(watch_svc, "watchlist_repo", None)
-    if repo is None:
-        raise HTTPException(status_code=500, detail="Watchlist repository not available")
-    # prefer remove() if implemented
-    if hasattr(repo, "remove"):
-        try:
-            repo.remove(username, symbol)
-            return {"ok": True}
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
-    # fallback: rewrite CSV via _path if available
-    if not hasattr(repo, "_path"):
-        raise HTTPException(status_code=500, detail="Repository does not support removal")
-    p = repo._path(username)
-    if not p.exists():
-        raise HTTPException(status_code=404, detail="Watchlist not found")
-    # read entries, filter and rewrite
-    rows = []
-    with open(p, newline="") as f:
-        reader = csv.DictReader(f)
-        for r in reader:
-            rows.append(r)
-    remaining = [r for r in rows if r.get("symbol") != symbol]
-    with open(p, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["symbol"])
-        writer.writeheader()
-        for r in remaining:
-            writer.writerow({"symbol": r["symbol"]})
-    return {"ok": True}
+    try:
+        watch_svc.remove_symbol(username, symbol)
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.get("/me/prices", response_model=List[PriceOut])
