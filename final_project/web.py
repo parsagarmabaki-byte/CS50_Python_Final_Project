@@ -76,6 +76,20 @@ class PriceOut(BaseModel):
     source: str
 
 
+class HistoricalPricesIn(BaseModel):
+    """Request schema for fetching historical prices."""
+    base: str
+    quote: str
+    start_date: str
+    end_date: Optional[str] = None
+
+
+class HistoricalPriceOut(BaseModel):
+    """Response schema for a historical price entry."""
+    date: str
+    price: float
+
+
 # --- Dependency helpers ---
 def get_services():
     """Build and return service instances for dependency injection.
@@ -324,3 +338,53 @@ def export_prices(username: str = Depends(auth_user), services=Depends(get_servi
         writer.writerow({"symbol": p.symbol, "price": p.price, "date": p.date, "source": p.source})
     buf.seek(0)
     return StreamingResponse(iter([buf.getvalue()]), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=prices.csv"})
+
+
+@app.post("/me/prices/historical", response_model=List[HistoricalPriceOut])
+def get_historical_prices(
+    payload: HistoricalPricesIn,
+    username: str = Depends(auth_user),
+    services=Depends(get_services)
+):
+    """Fetch historical exchange rates for a currency pair.
+
+    Args:
+        payload: The request containing base, quote, start_date, and optional end_date.
+        username: The authenticated username (from dependency injection).
+        services: The injected service instances.
+
+    Returns:
+        A list of historical price records with date and price.
+
+    Raises:
+        HTTPException: 400 if the request is invalid or API call fails.
+    """
+    watch_svc = services["watch_service"]
+    try:
+        data = watch_svc.get_historical_prices(
+            payload.base,
+            payload.quote,
+            payload.start_date,
+            payload.end_date
+        )
+        # data has structure: {"rates": {"SEK": 10.5}, "date": "2026-03-13"} for single date
+        # or {"rates": {"2026-03-13": {"SEK": 10.5}, "2026-03-12": {"SEK": 10.4}}} for range
+        rates = data.get("rates", {})
+        
+        # Check if it's a range response (dates as keys) or single date
+        if rates and isinstance(list(rates.keys())[0], str) and len(list(rates.keys())[0]) == 10:
+            # Range response: {date: {currency: rate}}
+            result = [
+                HistoricalPriceOut(date=date, price=rate.get(payload.quote.upper(), rate.get(payload.quote.lower(), 0)))
+                for date, rate in sorted(rates.items())
+            ]
+        else:
+            # Single date response: {currency: rate}
+            date = data.get("date", payload.start_date)
+            result = [HistoricalPriceOut(date=date, price=rates.get(payload.quote.upper(), rates.get(payload.quote.lower(), 0)))]
+        
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

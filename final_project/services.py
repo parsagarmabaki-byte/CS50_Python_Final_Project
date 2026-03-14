@@ -151,3 +151,27 @@ class WatchlistService:
         """
         self.watchlist_repo.remove(username, symbol)
         self.prices_repo.remove(username, symbol)
+
+    def get_historical_prices(self, base: str, quote: str, start_date: str, end_date: str | None = None) -> dict:
+        """Fetch historical exchange rates for a currency pair from the API.
+
+        Args:
+            base: The base currency ISO code (e.g., "USD").
+            quote: The quote currency ISO code (e.g., "SEK").
+            start_date: Start date in YYYY-MM-DD format.
+            end_date: End date in YYYY-MM-DD format (optional, defaults to latest).
+
+        Returns:
+            A dictionary with dates as keys and rate data as values.
+        """
+        base_up = base.upper()
+        quote_up = quote.upper()
+        if not self.SYMBOL_RE.match(base_up + quote_up):
+            raise ValueError("invalid currency codes")
+        
+        if end_date:
+            resp = self.api_client.range(start_date, end_date, base_up, quote_up)
+        else:
+            resp = self.api_client.latest(base_up, quote_up)
+        
+        return resp

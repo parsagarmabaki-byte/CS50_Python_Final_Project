@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import client from "../api/client";
+import HistoricalPricesModal from "../components/HistoricalPricesModal";
 
 type WatchEntry = { symbol: string };
 type Price = { symbol: string; price: number; date: string; source: string };
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const [base, setBase] = useState("");
   const [quote, setQuote] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
 
   const watchQ = useQuery({ queryKey: ["watchlist"], queryFn: fetchWatchlist });
   const pricesQ = useQuery({ queryKey: ["prices"], queryFn: fetchPrices });
@@ -113,14 +115,24 @@ export default function Dashboard() {
         ) : watchQ.data && watchQ.data.length > 0 ? (
           <ul className="divide-y">
             {watchQ.data.map(w => (
-              <li key={w.symbol} className="py-2 flex justify-between items-center">
-                <span className="font-mono text-gray-800">{w.symbol}</span>
-                <button 
-                  className="text-red-600 hover:text-red-800 hover:bg-red-50 px-2 py-1 rounded transition"
-                  onClick={() => removeSymbol(w.symbol)}
-                >
-                  Remove
-                </button>
+              <li key={w.symbol} className="py-2 flex justify-between items-center gap-2">
+                <span className="font-mono text-gray-800 flex-1">{w.symbol}</span>
+                <div className="flex gap-1">
+                  <button
+                    className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition text-sm"
+                    onClick={() => setSelectedSymbol(w.symbol)}
+                    title="View historical prices"
+                  >
+                    📈 History
+                  </button>
+                  <button
+                    className="text-red-600 hover:text-red-800 hover:bg-red-50 px-2 py-1 rounded transition text-sm"
+                    onClick={() => removeSymbol(w.symbol)}
+                    title="Remove from watchlist"
+                  >
+                    Remove
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -160,6 +172,13 @@ export default function Dashboard() {
           <p className="text-gray-500">No price data available. Add symbols and update prices.</p>
         )}
       </section>
+
+      {selectedSymbol && (
+        <HistoricalPricesModal
+          symbol={selectedSymbol}
+          onClose={() => setSelectedSymbol(null)}
+        />
+      )}
     </div>
   );
 }
