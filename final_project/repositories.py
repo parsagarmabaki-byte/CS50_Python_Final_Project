@@ -159,7 +159,7 @@ class CSVAccountRepository(AccountRepository):
                 writer.writerow({"username": acc.username, "password": acc.password, "email": acc.email or "", "date": acc.created or ""})
 
     def delete(self, username: str) -> None:
-        """Delete an account by username from the CSV file.
+        """Delete an account by username from the CSV file and remove user data files.
 
         Args:
             username: The username of the account to delete.
@@ -170,6 +170,16 @@ class CSVAccountRepository(AccountRepository):
             writer.writeheader()
             for acc in accounts:
                 writer.writerow({"username": acc.username, "password": acc.password, "email": acc.email or "", "date": acc.created or ""})
+        
+        # Also delete user-specific CSV files (watchlist and prices)
+        import os
+        watchlist_path = self.path.parent / f"{username}_watchlist.csv"
+        prices_path = self.path.parent / f"{username}_prices.csv"
+        
+        if watchlist_path.exists():
+            os.remove(watchlist_path)
+        if prices_path.exists():
+            os.remove(prices_path)
 
 # --- Watchlist repository (simple CSV per user) ---
 class WatchlistRepository(ABC):
