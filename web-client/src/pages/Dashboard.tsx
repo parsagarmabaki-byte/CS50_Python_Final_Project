@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import client from "../api/client";
 import HistoricalPricesModal from "../components/HistoricalPricesModal";
+import DeleteAccountModal from "../components/DeleteAccountModal";
 
 type WatchEntry = { symbol: string };
 type Price = { symbol: string; price: number; date: string; source: string };
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const [quote, setQuote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const watchQ = useQuery({ queryKey: ["watchlist"], queryFn: fetchWatchlist });
   const pricesQ = useQuery({ queryKey: ["prices"], queryFn: fetchPrices });
@@ -63,19 +65,25 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-semibold text-gray-800">Dashboard</h1>
-        <div className="flex gap-2">
-          <button 
-            onClick={() => updatePrices.mutate()} 
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => updatePrices.mutate()}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50"
             disabled={updatePrices.isPending}
           >
             {updatePrices.isPending ? "Updating..." : "Update Prices"}
           </button>
-          <button 
-            onClick={exportCsv} 
+          <button
+            onClick={exportCsv}
             className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition"
           >
             Export CSV
+          </button>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
+          >
+            Delete Account
           </button>
         </div>
       </div>
@@ -177,6 +185,12 @@ export default function Dashboard() {
         <HistoricalPricesModal
           symbol={selectedSymbol}
           onClose={() => setSelectedSymbol(null)}
+        />
+      )}
+
+      {showDeleteModal && (
+        <DeleteAccountModal
+          onClose={() => setShowDeleteModal(false)}
         />
       )}
     </div>

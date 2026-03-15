@@ -62,6 +62,19 @@ class AccountService:
         acc = self.repo.find(username)
         return acc is not None and acc.password == password
 
+    def delete_account(self, username: str) -> None:
+        """Delete a user account.
+
+        Args:
+            username: The username of the account to delete.
+
+        Raises:
+            ValueError: If the account does not exist.
+        """
+        if not self.repo.find(username):
+            raise ValueError("account not found")
+        self.repo.delete(username)
+
 
 class WatchlistService:
     """Service for managing user watchlists and price tracking.

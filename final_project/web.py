@@ -90,6 +90,12 @@ class HistoricalPriceOut(BaseModel):
     price: float
 
 
+class DeleteAccountIn(BaseModel):
+    """Request schema for account deletion with verification."""
+    password: str
+    confirmation: str
+
+
 # --- Dependency helpers ---
 def get_services():
     """Build and return service instances for dependency injection.
@@ -202,6 +208,50 @@ def logout(username: str = Depends(auth_user)):
     for t in tokens_to_remove:
         _token_store.pop(t, None)
     return {"ok": True}
+
+
+@app.delete("/me/account")
+def delete_account(
+    payload: DeleteAccountIn,
+    username: str = Depends(auth_user),
+    services=Depends(get_services)
+):
+    """Delete the authenticated user's account with verification.
+
+    Requires password verification and a confirmation string.
+
+    Args:
+        payload: The deletion request containing password and confirmation.
+        username: The authenticated username (from dependency injection).
+        services: The injected service instances.
+
+    Returns:
+        A success status object.
+
+    Raises:
+        HTTPException: 400 if verification fails or deletion fails,
+                      401 if password is incorrect.
+    """
+    acc_svc = services["account_service"]
+    
+    # Verify password
+    if not acc_svc.authenticate(username, payload.password):
+        raise HTTPException(status_code=401, detail="Incorrect password")
+    
+    # Verify confirmation string
+    if payload.confirmation.upper() != "DELETE":
+        raise HTTPException(status_code=400, detail="Confirmation must be 'DELETE'")
+    
+    # Delete the account
+    try:
+        acc_svc.delete_account(username)
+        # Invalidate all tokens for this user
+        tokens_to_remove = [t for t, u in _token_store.items() if u == username]
+        for t in tokens_to_remove:
+            _token_store.pop(t, None)
+        return {"ok": True}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.get("/me/watchlist", response_model=List[WatchlistOut])
