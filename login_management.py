@@ -11,12 +11,22 @@ class Account:
         directory (Path): base path for all user account folders.
     """
 
-    directory = (
-        Path("final_project")
-        .resolve()
-        .parent.joinpath("csv_files")
-        .joinpath("account_directory")
-    )
+    @classmethod
+    def get_directory(cls) -> Path:
+        """Get the base directory for account storage, creating it if needed.
+
+        Returns:
+            Path: path to the account directory.
+        """
+        base = Path(__file__).resolve().parent
+        directory = base.joinpath("csv_files", "account_directory")
+        directory.mkdir(parents=True, exist_ok=True)
+        return directory
+
+    @property
+    def directory(self) -> Path:
+        """Get the account directory path."""
+        return self.get_directory()
 
     def __init__(self, username, password, email=None):
         """Initialize the account object and ensure its directory/files exist.
@@ -41,7 +51,7 @@ class Account:
         Returns:
             Path: path to the newly created directory.
         """
-        account_dir = cls.directory.joinpath(username)
+        account_dir = cls.get_directory().joinpath(username)
         account_dir.mkdir(parents=True, exist_ok=True)
 
         for type_file in ["Watchlist", "Prices"]:
@@ -127,12 +137,10 @@ def accounts_path():
     Returns:
         Path
     """
-    return (
-        Path("final_project")
-        .resolve()
-        .parent.joinpath("csv_files")
-        .joinpath("Accounts.csv")
-    )
+    base = Path(__file__).resolve().parent
+    directory = base.joinpath("csv_files")
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory.joinpath("Accounts.csv")
 
 
 def prompt_login():
