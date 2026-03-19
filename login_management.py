@@ -132,7 +132,7 @@ def login_options() -> int:
 
 
 def accounts_path():
-    """Return the path to the main accounts CSV file.
+    """Return the path to the main accounts CSV file, creating it if needed.
 
     Returns:
         Path
@@ -140,7 +140,12 @@ def accounts_path():
     base = Path(__file__).resolve().parent
     directory = base.joinpath("csv_files")
     directory.mkdir(parents=True, exist_ok=True)
-    return directory.joinpath("Accounts.csv")
+    file_path = directory.joinpath("Accounts.csv")
+    if not file_path.exists():
+        with open(file_path, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["username", "password", "email", "date"])
+            writer.writeheader()
+    return file_path
 
 
 def prompt_login():
@@ -156,7 +161,7 @@ def prompt_login():
             break
         password = input("Password: ")
 
-        registered_accounts: list = read_file(accounts_path())
+        registered_accounts: list = read_file(accounts_path(),print_file_empty=False)
         user_account, account_index = find_account(
             username, password, registered_accounts
         )
@@ -210,7 +215,7 @@ def append_account(username: str, password: str, email: str, csv_File: str):
         sys.exit("FILE NOT FOUND,EXITING")
 
 
-def read_file(file) -> list:
+def read_file(file,print_file_empty=True) -> list:
     """Read a CSV file and return a list of row dictionaries.
 
     Args:
@@ -224,9 +229,10 @@ def read_file(file) -> list:
         reader = csv.DictReader(f)
         for acc in reader:
             accounts.append(acc)
-    if not accounts:
-        os.system("cls")
-        print("""=====================================
+    if print_file_empty:
+        if not accounts:
+            os.system("cls")
+            print("""=====================================
         FILES ARE EMPTY
 =====================================\n""")
     return accounts
@@ -306,7 +312,7 @@ def check_availability(username: str, file: str) -> bool:
     Returns:
         bool: True if username is available.
     """
-    accounts = read_file(file)
+    accounts = read_file(file,False)
     for acc in accounts:
         if acc.get("username") == username:
             print("\nUsername not available\n")
