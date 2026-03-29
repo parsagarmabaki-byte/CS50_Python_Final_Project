@@ -21,6 +21,7 @@ app = FastAPI(title="final_project API")
 
 # --- CORS Middleware ---
 # Allow frontend to connect (dev: localhost:5173, production: configure as needed)
+# For Ubuntu server deployment, add your server IP: http://YOUR_SERVER_IP:5173
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -28,6 +29,12 @@ app.add_middleware(
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
+        "http://0.0.0.0:5173",
+        # Ubuntu server IPs - update with your server IP
+        "http://192.168.1.100:5173",  # Example: Local network IP
+        "http://10.0.0.100:5173",     # Example: Private network IP
+        # Production: Add your public IP or domain
+        # "https://your_domain.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],

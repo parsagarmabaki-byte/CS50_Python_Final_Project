@@ -1,16 +1,21 @@
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-csv_files/
-.env
-.venv/
-venv/
-*.egg-info/
-.pytest_cache/
-.ruff_cache/
-*.log
-.DS_Store
-Thumbs.db
+# Docker and deployment files
+docker-compose.yml
+docker-compose.dev.yml
+docker-compose.prod.yml
+Dockerfile
+web-client/Dockerfile
+web-client/Dockerfile.dev
+web-client/nginx.conf
+web-client/.dockerignore
 
-node_modules/
+# Build output
+web-client/dist/
+web-client/node_modules/
+
+# Environment files
+.env
+.env.local
+.env.production
+web-client/.env
+web-client/.env.local
+web-client/.env.production
