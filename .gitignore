@@ -1,11 +1,4 @@
 # Docker and deployment files
-docker-compose.yml
-docker-compose.dev.yml
-docker-compose.prod.yml
-Dockerfile
-web-client/Dockerfile
-web-client/Dockerfile.dev
-web-client/nginx.conf
 web-client/.dockerignore
 
 # Build output
