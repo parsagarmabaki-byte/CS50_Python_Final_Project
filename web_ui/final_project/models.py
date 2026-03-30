@@ -4,8 +4,9 @@
 This module defines the core data structures used throughout the application
 for representing user accounts, price records, and watchlist entries.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
+from datetime import datetime, timezone
 
 
 @dataclass
@@ -14,12 +15,12 @@ class Account:
 
     Attributes:
         username: The unique username for the account.
-        password: The user's password (stored in plain text).
+        password: The user's hashed password (bcrypt hash).
         email: The user's email address (optional).
         created: The date the account was created (optional, YYYY-MM-DD format).
     """
     username: str
-    password: str
+    password: str  # bcrypt hashed password
     email: Optional[str] = None
     created: Optional[str] = None
 

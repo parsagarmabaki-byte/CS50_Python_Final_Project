@@ -8,8 +8,9 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 from pathlib import Path
 import csv
+import shutil
 from .models import Account, PriceRecord, WatchlistEntry
-from .config import DATA_DIR
+from .config import DATA_DIR, ACCOUNT_DIR
 
 
 class RepositoryError(Exception):
@@ -163,6 +164,9 @@ class CSVAccountRepository(AccountRepository):
 
         Args:
             username: The username of the account to delete.
+        
+        Raises:
+            RepositoryError: If unable to delete user directory.
         """
         accounts = [a for a in self.list_accounts() if a.username != username]
         with open(self.path, "w", newline="") as f:
@@ -170,16 +174,14 @@ class CSVAccountRepository(AccountRepository):
             writer.writeheader()
             for acc in accounts:
                 writer.writerow({"username": acc.username, "password": acc.password, "email": acc.email or "", "date": acc.created or ""})
-        
-        # Also delete user-specific CSV files (watchlist and prices)
-        import os
-        watchlist_path = self.path.parent / f"{username}_watchlist.csv"
-        prices_path = self.path.parent / f"{username}_prices.csv"
-        
-        if watchlist_path.exists():
-            os.remove(watchlist_path)
-        if prices_path.exists():
-            os.remove(prices_path)
+
+        # Also delete user-specific CSV files from shared account_directory
+        user_dir = ACCOUNT_DIR / username
+        if user_dir.exists():
+            try:
+                shutil.rmtree(user_dir)
+            except (PermissionError, OSError) as e:
+                raise RepositoryError(f"Failed to delete user directory: {e}")
 
 # --- Watchlist repository (simple CSV per user) ---
 class WatchlistRepository(ABC):
@@ -221,18 +223,30 @@ class WatchlistRepository(ABC):
 class CSVWatchlistRepository(WatchlistRepository):
     """CSV-based implementation of the WatchlistRepository interface.
 
-    Each user has their own watchlist CSV file named '{username}_watchlist.csv'.
+    Each user has their own watchlist CSV file in ACCOUNT_DIR/username/Watchlist.csv
+    matching the terminal UI structure.
     """
 
-    def __init__(self, base_dir: Path = DATA_DIR):
+    def __init__(self, base_dir: Path = ACCOUNT_DIR):
         """Initialize the CSV watchlist repository.
 
         Args:
-            base_dir: The directory where watchlist CSV files are stored.
-                      Defaults to DATA_DIR.
+            base_dir: The base directory where user account directories are stored.
+                      Defaults to ACCOUNT_DIR.
         """
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
+
+    def _user_dir(self, username: str) -> Path:
+        """Get the path to a user's account directory.
+
+        Args:
+            username: The username whose directory path to generate.
+
+        Returns:
+            The Path to the user's account directory.
+        """
+        return self.base_dir / username
 
     def _path(self, username: str) -> Path:
         """Get the path to a user's watchlist CSV file.
@@ -243,7 +257,7 @@ class CSVWatchlistRepository(WatchlistRepository):
         Returns:
             The Path to the user's watchlist CSV file.
         """
-        return self.base_dir / f"{username}_watchlist.csv"
+        return self._user_dir(username) / "Watchlist.csv"
 
     def list(self, username: str) -> List[WatchlistEntry]:
         """Retrieve all watchlist entries for a user.
@@ -270,10 +284,13 @@ class CSVWatchlistRepository(WatchlistRepository):
             entry: The WatchlistEntry to add.
         """
         p = self._path(username)
-        exists = p.exists()
+        # Ensure user directory exists
+        p.parent.mkdir(parents=True, exist_ok=True)
+        # Check if file exists to determine if we need headers
+        needs_header = not p.exists() or p.stat().st_size == 0
         with open(p, "a", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=["symbol"])
-            if not exists:
+            if needs_header:
                 writer.writeheader()
             writer.writerow({"symbol": entry.symbol})
 
@@ -340,18 +357,30 @@ class PricesRepository(ABC):
 class CSVPricesRepository(PricesRepository):
     """CSV-based implementation of the PricesRepository interface.
 
-    Each user has their own prices CSV file named '{username}_prices.csv'.
+    Each user has their own prices CSV file in ACCOUNT_DIR/username/Prices.csv
+    matching the terminal UI structure.
     """
 
-    def __init__(self, base_dir: Path = DATA_DIR):
+    def __init__(self, base_dir: Path = ACCOUNT_DIR):
         """Initialize the CSV prices repository.
 
         Args:
-            base_dir: The directory where prices CSV files are stored.
-                      Defaults to DATA_DIR.
+            base_dir: The directory where user account directories are stored.
+                      Defaults to ACCOUNT_DIR.
         """
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
+
+    def _user_dir(self, username: str) -> Path:
+        """Get the path to a user's account directory.
+
+        Args:
+            username: The username whose directory path to generate.
+
+        Returns:
+            The Path to the user's account directory.
+        """
+        return self.base_dir / username
 
     def _path(self, username: str) -> Path:
         """Get the path to a user's prices CSV file.
@@ -362,7 +391,7 @@ class CSVPricesRepository(PricesRepository):
         Returns:
             The Path to the user's prices CSV file.
         """
-        return self.base_dir / f"{username}_prices.csv"
+        return self._user_dir(username) / "Prices.csv"
 
     def append(self, username: str, record: PriceRecord) -> None:
         """Append a price record to the user's price history.
@@ -372,10 +401,13 @@ class CSVPricesRepository(PricesRepository):
             record: The PriceRecord to append.
         """
         p = self._path(username)
-        exists = p.exists()
+        # Ensure user directory exists
+        p.parent.mkdir(parents=True, exist_ok=True)
+        # Check if file exists to determine if we need headers
+        needs_header = not p.exists() or p.stat().st_size == 0
         with open(p, "a", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=["symbol","price","date","source"])
-            if not exists:
+            if needs_header:
                 writer.writeheader()
             writer.writerow({"symbol": record.symbol, "price": record.price, "date": record.date, "source": record.source})
 

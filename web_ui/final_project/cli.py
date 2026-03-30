@@ -9,7 +9,7 @@ from pathlib import Path
 from .repositories import CSVAccountRepository, CSVWatchlistRepository, CSVPricesRepository
 from .api_clients import FrankfurterClient
 from .services import AccountService, WatchlistService
-from .config import DATA_DIR
+from .config import DATA_DIR, ACCOUNT_DIR
 
 
 def build_services(data_dir: Path = DATA_DIR):
@@ -26,8 +26,9 @@ def build_services(data_dir: Path = DATA_DIR):
         A tuple of (AccountService, WatchlistService) instances.
     """
     account_repo = CSVAccountRepository(data_dir / "Accounts.csv")
-    watch_repo = CSVWatchlistRepository(data_dir)
-    prices_repo = CSVPricesRepository(data_dir)
+    # Watchlist and Prices repos use ACCOUNT_DIR (data_dir/account_directory)
+    watch_repo = CSVWatchlistRepository(ACCOUNT_DIR)
+    prices_repo = CSVPricesRepository(ACCOUNT_DIR)
     api_client = FrankfurterClient()
     return AccountService(account_repo), WatchlistService(watch_repo, prices_repo, api_client)
 

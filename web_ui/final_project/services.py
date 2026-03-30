@@ -5,6 +5,7 @@ This module provides service classes that encapsulate the core business logic
 for account management and watchlist operations.
 """
 import re
+import bcrypt
 from datetime import datetime, timezone
 from typing import List
 from .models import Account, PriceRecord, WatchlistEntry
@@ -29,12 +30,35 @@ class AccountService:
         """
         self.repo = repo
 
+    def _hash_password(self, password: str) -> str:
+        """Hash a password using bcrypt.
+
+        Args:
+            password: The plain text password to hash.
+
+        Returns:
+            The bcrypt hashed password as a string.
+        """
+        return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+    def _verify_password(self, password: str, hashed: str) -> bool:
+        """Verify a password against a bcrypt hash.
+
+        Args:
+            password: The plain text password to verify.
+            hashed: The bcrypt hashed password.
+
+        Returns:
+            True if the password matches, False otherwise.
+        """
+        return bcrypt.checkpw(password.encode(), hashed.encode())
+
     def register(self, username: str, password: str, email: str | None = None) -> Account:
         """Register a new user account.
 
         Args:
             username: The desired username (must be unique).
-            password: The user's password.
+            password: The user's password (will be hashed).
             email: The user's email address (optional).
 
         Returns:
@@ -45,7 +69,13 @@ class AccountService:
         """
         if self.repo.find(username):
             raise ValueError("username exists")
-        acc = Account(username=username, password=password, email=email, created=datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+        hashed_password = self._hash_password(password)
+        acc = Account(
+            username=username,
+            password=hashed_password,
+            email=email,
+            created=datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        )
         self.repo.add_account(acc)
         return acc
 
@@ -60,7 +90,9 @@ class AccountService:
             True if authentication succeeds, False otherwise.
         """
         acc = self.repo.find(username)
-        return acc is not None and acc.password == password
+        if acc is None:
+            return False
+        return self._verify_password(password, acc.password)
 
     def delete_account(self, username: str) -> None:
         """Delete a user account.

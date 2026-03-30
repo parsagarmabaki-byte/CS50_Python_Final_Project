@@ -1,72 +1,88 @@
 # MarketWatch — Currency Watchlist Manager
 
-A Python application for tracking currency exchange rates using the [Frankfurter API](https://www.frankfurter.app/). Features a legacy CLI, a modern FastAPI backend, and a React + TypeScript SPA frontend.
+A Python application for tracking currency exchange rates using the [Frankfurter API](https://www.frankfurter.app/). Features a **Terminal UI (CLI)**, a **Modern FastAPI Web Backend**, and a **React + TypeScript SPA Frontend**.
+
+## Features
+
+- 🔐 **Bcrypt Password Hashing** — Secure password storage for both Terminal and Web UI
+- 📁 **Shared Data Structure** — Both UIs use the same account files and user directories
+- 💻 **Terminal UI** — Classic CLI interface with interactive menus
+- 🌐 **Web API** — RESTful FastAPI backend with token authentication
+- ⚛️ **React Frontend** — Modern SPA with TypeScript and Tailwind CSS
+- 📊 **Currency Tracking** — Watchlist management and price history
+- 🧪 **Testable Architecture** — Repository pattern with dependency injection
 
 ## Project Structure
 
 ```
 final_project/
-├── final_project/          # Backend Python package
-│   ├── __init__.py
-│   ├── config.py           # Configuration & paths
-│   ├── models.py           # Data classes (Account, PriceRecord, WatchlistEntry)
-│   ├── repositories.py     # CSV data access layer (Repository pattern)
-│   ├── services.py         # Business logic (AccountService, WatchlistService)
-│   ├── api_clients.py      # External API client (FrankfurterClient)
-│   ├── cli.py              # CLI adapter
-│   └── web.py              # FastAPI web adapter
-├── web-client/             # React + TypeScript frontend SPA
-│   ├── src/
-│   │   ├── api/            # Axios client with auth interceptor
-│   │   ├── auth/           # Auth context (login, logout, register)
-│   │   ├── layout/         # App layout with navigation
-│   │   ├── pages/          # LoginPage, RegisterPage, Dashboard
-│   │   └── __tests__/      # Vitest tests
-│   ├── package.json
-│   └── README.md           # Frontend documentation
-├── tests/                  # Pytest tests for backend
-│   ├── test_repositories.py
-│   ├── test_services.py
-│   └── test_web.py         # Web API integration tests
-├── csv_files/              # Data persistence (CSV files)
-├── login_management.py     # Legacy auth module
-├── user_menu.py            # Legacy CLI dashboard
-├── API_management.py       # Legacy API functions
-├── requirements.txt        # Python dependencies
-├── pyproject.toml          # Project configuration
+├── terminal_ui/              # Terminal/CLI application
+│   ├── main.py               # CLI entry point
+│   ├── login_management.py   # Authentication & account management
+│   ├── user_menu.py          # User dashboard menu
+│   ├── API_management.py     # Currency API functions
+│   └── argparse_management.py # CLI argument parsing
+├── web_ui/                   # Web application
+│   ├── final_project/        # Backend Python package
+│   │   ├── __init__.py
+│   │   ├── config.py         # Configuration & paths
+│   │   ├── models.py         # Data classes
+│   │   ├── repositories.py   # CSV data access layer
+│   │   ├── services.py       # Business logic with bcrypt
+│   │   ├── api_clients.py    # Frankfurter API client
+│   │   ├── cli.py            # CLI adapter
+│   │   └── web.py            # FastAPI web adapter
+│   ├── tests/                # Web backend tests
+│   └── web-client/           # React + TypeScript SPA
+│       ├── src/
+│       ├── package.json
+│       └── README.md
+├── csv_files/                # Shared data persistence
+│   ├── Accounts.csv          # User credentials (bcrypt hashed)
+│   └── account_directory/    # User-specific data
+│       ├── username1/
+│       │   ├── Watchlist.csv
+│       │   └── Prices.csv
+│       └── username2/
+├── tests.py                  # Unit tests
+├── requirements.txt          # Python dependencies
+├── pyproject.toml           # Project configuration
 └── README.md
 ```
 
 ## Architecture
 
-The refactored code uses **dependency injection** and the **Repository pattern**:
+The application uses **dependency injection** and the **Repository pattern** for clean separation of concerns:
 
 ```
-┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
-│   CLI/Web   │────▶│   Services   │────▶│  Repositories   │
-│  Adapters   │     │ (Business    │     │ (CSV Access)    │
-│             │     │   Logic)     │     │                 │
-└─────────────┘     └──────────────┘     └─────────────────┘
-                           │
-                           ▼
-                    ┌──────────────┐
-                    │ API Clients  │
-                    │ (Frankfurter)│
-                    └──────────────┘
+┌─────────────────┐     ┌──────────────┐     ┌─────────────────┐
+│ Terminal / Web  │────▶│   Services   │────▶│  Repositories   │
+│   Interfaces    │     │ (Business    │     │ (CSV Access)    │
+│                 │     │   Logic)     │     │                 │
+└─────────────────┘     └──────────────┘     └─────────────────┘
+                               │
+                               ▼
+                        ┌──────────────┐
+                        │ API Clients  │
+                        │ (Frankfurter)│
+                        └──────────────┘
 ```
 
 ### Key Design Principles
 
-- **No prints/input** in core modules (`models.py`, `repositories.py`, `services.py`, `api_clients.py`)
+- **No prints/input** in core modules (models, repositories, services, api_clients)
 - **Dependency injection**: Services accept repository and client objects
-- **CSV schema backward-compatible**: Header `username,password,email,date`
+- **Bcrypt password hashing**: Secure password storage in both UIs
+- **Shared CSV schema**: `username,password,email,date` (password is bcrypt hash)
 - **Testable**: Repositories hide CSV access behind interfaces
+- **Cross-UI compatibility**: Terminal and Web UI share the same data files
 
 ## Installation
 
 ### Requirements
 
 - Python 3.10+
+- Node.js 18+ (for React frontend)
 
 ### Install Dependencies
 
@@ -74,37 +90,51 @@ The refactored code uses **dependency injection** and the **Repository pattern**
 pip install -r requirements.txt
 ```
 
-Dependencies include:
+**Dependencies include:**
 - `requests` — HTTP client for Frankfurter API
+- `bcrypt` — Password hashing
+- `email-validator` — Email validation
 - `fastapi` + `uvicorn` — Web API
 - `pydantic` — Data validation
 - `pytest` — Testing
 
-## Running the New Refactored Code
+## Running the Terminal UI (CLI)
 
-### CLI (Command Line Interface)
+### Interactive Mode
 
-The new CLI supports demo commands for non-interactive usage:
+Run the full interactive dashboard:
 
 ```bash
-# Register a new user
-python -m final_project.cli --demo-register alice password123 alice@example.com
-
-# Add a currency symbol (requires network for Frankfurter API)
-python -m final_project.cli --demo-add-symbol alice USD SEK
+cd terminal_ui
+python main.py
 ```
 
-### Web API (FastAPI)
+The Terminal UI provides:
+- 🔐 Login/Register with bcrypt password security
+- 📋 Watchlist management (add/remove/view symbols)
+- 💹 Price updates from Frankfurter API
+- ⚙️ Account management (change email, password, delete account)
+
+### Command-Line Arguments
+
+Login directly with credentials:
+
+```bash
+python terminal_ui/main.py -u username -p password
+```
+
+## Running the Web API (FastAPI)
 
 Start the web server:
 
 ```bash
+cd web_ui
 uvicorn final_project.web:app --reload --port 8000
 ```
 
-#### Authentication
+### Authentication
 
-The web API uses simple token-based authentication (demo purposes):
+The web API uses simple token-based authentication:
 
 1. **Login** to get a token:
    ```bash
@@ -121,7 +151,7 @@ The web API uses simple token-based authentication (demo purposes):
    ```
    Or use the `X-Auth-Token` header as an alternative.
 
-#### API Endpoints
+### API Endpoints
 
 | Method | Endpoint                  | Auth  | Description                    |
 |--------|---------------------------|-------|--------------------------------|
@@ -136,7 +166,7 @@ The web API uses simple token-based authentication (demo purposes):
 | POST   | `/me/prices/update`       | Yes   | Refresh all watchlist prices   |
 | GET    | `/me/prices/export`       | Yes   | Download prices as CSV         |
 
-#### Example Requests
+### Example Requests
 
 **Register a user:**
 ```bash
@@ -186,13 +216,13 @@ A modern single-page application built with React, TypeScript, and Tailwind CSS.
 ### Installation
 
 ```bash
-cd web-client
+cd web_ui/web-client
 npm install
 ```
 
 ### Configuration
 
-Create `.env` file in `web-client/`:
+Create `.env` file in `web_ui/web-client/`:
 
 ```bash
 VITE_API_BASE_URL=http://127.0.0.1:8000
@@ -201,7 +231,7 @@ VITE_API_BASE_URL=http://127.0.0.1:8000
 ### Development
 
 ```bash
-cd web-client
+cd web_ui/web-client
 npm run dev
 ```
 
@@ -221,9 +251,9 @@ The app will be available at `http://localhost:5173`.
 npm run build
 ```
 
-Output is in `web-client/dist/`. Deploy to any static host or serve from FastAPI.
+Output is in `web_ui/web-client/dist/`. Deploy to any static host or serve from FastAPI.
 
-See `web-client/README.md` for full documentation.
+See `web_ui/web-client/README.md` for full documentation.
 
 ## Testing
 
@@ -233,13 +263,20 @@ See `web-client/README.md` for full documentation.
 pytest -v
 ```
 
+Or run the simple test runner:
+
+```bash
+python tests.py
+```
+
 ### Test Files
 
 | File                      | Description                          |
 |---------------------------|--------------------------------------|
-| `tests/test_repositories.py` | CSV repository CRUD operations    |
-| `tests/test_services.py`     | Service layer with mocked API     |
-| `tests/test_web.py`          | Web API integration tests         |
+| `tests.py`                | Unit tests for core functionality    |
+| `web_ui/tests/test_repositories.py` | CSV repository CRUD operations    |
+| `web_ui/tests/test_services.py`     | Service layer with mocked API     |
+| `web_ui/tests/test_web.py`          | Web API integration tests         |
 
 **Web tests cover:**
 - Full register → login → add symbol → watchlist → prices → export → logout flow
@@ -266,12 +303,16 @@ def test_csv_account_repo(tmp_path: Path):
 
 ### Accounts.csv
 
+Located at `csv_files/Accounts.csv` (shared by both UIs):
+
 ```csv
 username,password,email,date
-alice,password123,alice@example.com,2026-03-13
+alice,$2b$12$KIXx...hashed...,alice@example.com,2026-03-30
 ```
 
-### Per-User Watchlist (`{username}_watchlist.csv`)
+**Note:** The `password` field contains a bcrypt hash, not plain text.
+
+### Per-User Watchlist (`csv_files/account_directory/username/Watchlist.csv`)
 
 ```csv
 symbol
@@ -279,12 +320,33 @@ FX:USDSEK
 FX:EURGBP
 ```
 
-### Per-User Prices (`{username}_prices.csv`)
+### Per-User Prices (`csv_files/account_directory/username/Prices.csv`)
 
 ```csv
 symbol,price,date,source
-FX:USDSEK,10.5,2026-03-13,Frankfurter
+FX:USDSEK,10.5,2026-03-30,Frankfurter
 ```
+
+### Shared Data Structure
+
+Both Terminal UI and Web UI share the same data files:
+
+```
+csv_files/
+├── Accounts.csv              # Shared account credentials
+└── account_directory/
+    ├── alice/
+    │   ├── Watchlist.csv     # Shared watchlist
+    │   └── Prices.csv        # Shared price records
+    └── bob/
+        ├── Watchlist.csv
+        └── Prices.csv
+```
+
+This means:
+- ✅ Register a user in Terminal UI → Login in Web UI
+- ✅ Add symbol in Web UI → View in Terminal UI
+- ✅ Passwords are securely hashed with bcrypt in both UIs
 
 ## Development
 
@@ -294,13 +356,13 @@ The project uses standard Python formatting:
 
 ```bash
 # Format code
-black final_project/ tests/
+black terminal_ui/ web_ui/final_project/ tests/
 
 # Sort imports
-isort final_project/ tests/
+isort terminal_ui/ web_ui/final_project/ tests/
 
 # Type checking (optional)
-mypy final_project/
+mypy web_ui/final_project/
 ```
 
 ### Pre-commit Hooks (Recommended)
@@ -324,24 +386,28 @@ repos:
 ### FrankfurterClient
 
 ```python
-from final_project.api_clients import FrankfurterClient
+from web_ui.final_project.api_clients import FrankfurterClient
 
 client = FrankfurterClient()
 
 # Get latest exchange rate
 response = client.latest("USD", "SEK")
-# Returns: {"base": "USD", "date": "2026-03-13", "rates": {"SEK": 10.5}}
+# Returns: {"base": "USD", "date": "2026-03-30", "rates": {"SEK": 10.5}}
 
 # Get historical rates
-response = client.range("2026-01-01", "2026-03-13", "USD", "SEK")
+response = client.range("2026-01-01", "2026-03-30", "USD", "SEK")
 ```
 
-### Services
+### Services (Web UI)
 
 ```python
-from final_project.services import AccountService, WatchlistService
-from final_project.repositories import CSVAccountRepository, CSVWatchlistRepository, CSVPricesRepository
-from final_project.api_clients import FrankfurterClient
+from web_ui.final_project.services import AccountService, WatchlistService
+from web_ui.final_project.repositories import (
+    CSVAccountRepository,
+    CSVWatchlistRepository,
+    CSVPricesRepository
+)
+from web_ui.final_project.api_clients import FrankfurterClient
 
 # Setup
 account_repo = CSVAccountRepository()
@@ -352,11 +418,39 @@ api_client = FrankfurterClient()
 account_service = AccountService(account_repo)
 watchlist_service = WatchlistService(watchlist_repo, prices_repo, api_client)
 
-# Register user
+# Register user (password will be hashed with bcrypt)
 account = account_service.register("alice", "password123", "alice@example.com")
+
+# Authenticate user
+is_valid = account_service.authenticate("alice", "password123")
 
 # Add currency symbol
 price_record = watchlist_service.add_symbol("alice", "USD", "SEK")
+```
+
+### Terminal UI Modules
+
+```python
+from terminal_ui.login_management import (
+    hash_password,
+    check_user_password,
+    Account,
+    accounts_path,
+    account_files_path
+)
+
+# Hash a password
+hashed = hash_password("mypassword")
+
+# Verify password
+is_valid = check_user_password(hashed, "mypassword")
+
+# Create account directory
+acc = Account("username", hashed, "email@example.com")
+
+# Get path to user's files
+user_dir = account_files_path("username")
+# Returns: Path to csv_files/account_directory/username/
 ```
 
 ### Web API Pydantic Schemas
@@ -399,3 +493,33 @@ class PriceOut(BaseModel):
 ## License
 
 MIT License
+
+---
+
+## Quick Start Summary
+
+### Terminal UI
+```bash
+cd terminal_ui
+python main.py  # Interactive menu
+# or
+python main.py -u username -p password  # Direct login
+```
+
+### Web API
+```bash
+cd web_ui
+uvicorn final_project.web:app --reload --port 8000
+```
+
+### React Frontend
+```bash
+cd web_ui/web-client
+npm install
+npm run dev
+```
+
+### Shared Data
+Both UIs share the same data files in `csv_files/`:
+- `Accounts.csv` - User credentials (bcrypt hashed)
+- `account_directory/username/` - User-specific watchlists and prices

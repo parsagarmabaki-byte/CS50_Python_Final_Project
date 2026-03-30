@@ -240,15 +240,15 @@ def delete_account(
                       401 if password is incorrect.
     """
     acc_svc = services["account_service"]
-    
+
     # Verify password
     if not acc_svc.authenticate(username, payload.password):
         raise HTTPException(status_code=401, detail="Incorrect password")
-    
+
     # Verify confirmation string
     if payload.confirmation.upper() != "DELETE":
         raise HTTPException(status_code=400, detail="Confirmation must be 'DELETE'")
-    
+
     # Delete the account
     try:
         acc_svc.delete_account(username)
