@@ -12,3 +12,11 @@ web-client/node_modules/
 web-client/.env
 web-client/.env.local
 web-client/.env.production
+
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.pytest_cache/
+.mypy_cache/
