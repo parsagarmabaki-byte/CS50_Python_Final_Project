@@ -5,13 +5,15 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "final_project"
 version = "0.1.0"
-description = "Final project with decoupled architecture"
+description = "MarketWatch - Currency Watchlist Manager with Terminal and Web UI"
 requires-python = ">=3.10"
 dependencies = [
     "requests>=2.31.0",
     "fastapi>=0.95.0",
     "uvicorn[standard]>=0.22.0",
     "pydantic>=1.10.10",
+    "bcrypt>=4.0.0",
+    "email-validator>=2.0.0",
 ]
 
 [project.optional-dependencies]
@@ -22,11 +24,15 @@ dev = [
     "mypy",
 ]
 
+[project.scripts]
+marketwatch-cli = "terminal_ui.main:main"
+marketwatch-web = "web_ui.final_project.web:app"
+
 [tool.setuptools.packages.find]
-include = ["final_project*"]
+include = ["terminal_ui*", "web_ui*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["web_ui/tests"]
 
 [tool.black]
 line-length = 88
