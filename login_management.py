@@ -1,7 +1,18 @@
+"""Login and account management module for the MarketWatch application.
+
+This module handles user authentication, registration, password hashing,
+email validation, and account file management.
+"""
+
 from email_validator import validate_email, EmailNotValidError
-import sys, csv, datetime
+import sys
+import csv
+import datetime
+import bcrypt
+import getpass
 from pathlib import Path
-import re, csv, os
+import re
+import os
 
 
 class Account:
@@ -109,26 +120,24 @@ def account_files_path(username):
 def login_options() -> int:
     """Prompt for login/register/exit choice and validate input.
 
+    Displays a menu allowing the user to log in, register a new account,
+    or exit the program. Continues prompting until a valid choice is made.
+
     Returns:
-        int: 1 for login, 2 for registration, 3 for exit (which also exits program).
+        int: 1 for login, 2 for registration. Choice 3 exits the program.
     """
-    while 1:
-        try:
-            options = int(
-                input("(1) Log in \n(2) Register a new account \n(3) Exit \nChoice: ")
+    while True:
+        choice = int(
+            get_string(
+                "(1) Log in \n(2) Register a new account \n(3) Exit \nChoice: ",
+                r"^[123]$",
             )
-
-            if options > 3 or options < 1:
-                raise ValueError
-
-            if options == 3:
-                sys.exit("\nEXIT SUCCESSFUL")
-
-            return options
-
-        except ValueError:
-            print("\nINVALID INPUT!\n")
-            continue
+        )
+        print()
+        if choice == 3:
+            os.system("cls")
+            sys.exit("EXIT SUCCESSFUL")
+        return choice
 
 
 def accounts_path():
@@ -143,7 +152,9 @@ def accounts_path():
     file_path = directory.joinpath("Accounts.csv")
     if not file_path.exists():
         with open(file_path, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=["username", "password", "email", "date"])
+            writer = csv.DictWriter(
+                f, fieldnames=["username", "password", "email", "date"]
+            )
             writer.writeheader()
     return file_path
 
@@ -156,50 +167,83 @@ def prompt_login():
     """
     user_account = None
     while user_account is None:
-        username = input("Username: ")
+        username = input("Username: ").strip()
         if not username:
-            break
-        password = input("Password: ")
+            return None, None, None
 
-        registered_accounts: list = read_file(accounts_path(),print_file_empty=False)
+        password = getpass.getpass("Password: ").strip()
+
+        registered_accounts: list = read_file(accounts_path(), print_file_empty=False)
         user_account, account_index = find_account(
             username, password, registered_accounts
         )
     return user_account, account_index, registered_accounts
 
 
-def create_account():
+def hash_password(entered_password: str) -> str:
+    """Hash a password using bcrypt after validating its length.
+
+    Validates that the password is between 3 and 24 characters.
+    If invalid, prints an error message and returns None.
+
+    Args:
+        entered_password (str): The plain text password to hash.
+
+    Returns:
+        str: The hashed password, or None if validation fails.
+    """
+    if re.fullmatch(r".{3,24}", entered_password):
+        return bcrypt.hashpw(entered_password.encode(), bcrypt.gensalt()).decode()
+    print("\nInvalid Password!\n\n")
+    return None
+
+
+def create_account() -> None:
     """Guide the user through creating a new account and persist it.
+
+    Prompts for username, validates availability, then collects password
+    and email. Creates the account directory and appends to the accounts CSV.
 
     Returns:
         None
     """
     accounts_csv_path = accounts_path()
-    status = False
-    while status is False:
-        username, password = get_username_password()
-        status = check_availability(username, accounts_csv_path)
+    username_available = False
+    while not username_available:
+        username = input("Username: ").strip()
+        if not username:
+            return
+        if not re.search(r"^[A-Za-z0-9_ ]{3,24}$", username):
+            print("\nINVALID USERNAME\n")
+            continue
+        username_available = check_availability(username, accounts_csv_path)
+
+    entered_password = getpass.getpass("Password: ").strip()
+    hashed_password = hash_password(entered_password)
 
     email = enter_email()
-    acc = Account(username, password, email)
+
+    acc = Account(username, hashed_password, email)
     append_account(acc.username, acc.password, acc.email, accounts_csv_path)
 
 
-def append_account(username: str, password: str, email: str, csv_File: str):
+def append_account(
+    username: str, password: str, email: str, accounts_file_path: str
+) -> None:
     """Append a new account row to the accounts CSV file.
 
     Args:
-        username (str)
-        password (str)
-        email (str)
-        csv_File (str): path to CSV file
+        username (str): The username for the new account.
+        password (str): The hashed password.
+        email (str): The user's email address.
+        accounts_file_path (str): Path to the accounts CSV file.
 
     Returns:
         None
     """
-    date = datetime.datetime.now()
+    current_date = datetime.datetime.now()
     try:
-        with open(csv_File, "a", newline="") as file:
+        with open(accounts_file_path, "a", newline="") as file:
             writer = csv.DictWriter(
                 file, fieldnames=["username", "password", "email", "date"]
             )
@@ -208,111 +252,143 @@ def append_account(username: str, password: str, email: str, csv_File: str):
                     "username": username,
                     "password": password,
                     "email": email,
-                    "date": date.strftime("%x"),
+                    "date": current_date.strftime("%x"),
                 }
             )
     except FileNotFoundError:
         sys.exit("FILE NOT FOUND,EXITING")
 
 
-def read_file(file,print_file_empty=True) -> list:
+def read_file(file_path: Path | str, print_file_empty: bool = True) -> list:
     """Read a CSV file and return a list of row dictionaries.
 
     Args:
-        file (Path|str): path to CSV file.
+        file_path (Path | str): Path to the CSV file to read.
+        print_file_empty (bool): If True, prints a message when the file is empty.
 
     Returns:
-        list: of dicts representing rows.
+        list: List of dictionaries representing each row in the CSV.
     """
     accounts = []
-    with open(file) as f:
+    with open(file_path) as f:
         reader = csv.DictReader(f)
         for acc in reader:
             accounts.append(acc)
-    if print_file_empty:
-        if not accounts:
-            os.system("cls")
-            print("""=====================================
+    if print_file_empty and not accounts:
+        os.system("cls")
+        print("""=====================================
         FILES ARE EMPTY
 =====================================\n""")
     return accounts
 
 
-def find_account(username: str, password: str, accounts: list[dict]) -> dict | int:
+def find_account(
+    username: str, password: str, accounts: list[dict]
+) -> tuple[dict, int] | tuple[None, None]:
     """Search for a username/password pair in the accounts list.
 
+    Iterates through the accounts list to find a matching username and
+    verifies the password using bcrypt.
+
     Args:
-        username (str)
-        password (str)
-        accounts (list[dict]): list of account records.
+        username (str): The username to search for.
+        password (str): The plain text password to verify.
+        accounts (list[dict]): List of account records from the CSV.
 
     Returns:
         tuple: (account dict, index) if found; otherwise (None, None).
     """
     for index, acc in enumerate(accounts):
-        if acc.get("username") == username and acc.get("password") == password:
+        if acc.get("username") == username and check_user_password(
+            acc.get("password"), password
+        ):
             return acc, index
     print("\nUsername or Password is incorrect\n")
     return None, None
 
 
-def enter_email() -> str:
-    """Prompt the user for a valid email; return None if input blank.
+def check_user_password(stored_password: str, entered_password: str) -> bool:
+    """Verify a plain text password against a stored bcrypt hash.
+
+    Args:
+        stored_password (str): The bcrypt-hashed password from storage.
+        entered_password (str): The plain text password to verify.
 
     Returns:
-        str | None
+        bool: True if the password matches, False otherwise.
     """
-    status = False
-    while status is not True:
-        email = input("Email: ")
-        if email == "":
+    if bcrypt.checkpw(entered_password.encode(), stored_password.encode()):
+        return True
+    return False
+
+
+def enter_email() -> str | None:
+    """Prompt the user for a valid email address.
+
+    Continues prompting until a valid email is entered or the user
+    provides an empty input (which returns None).
+
+    Returns:
+        str | None: The validated email address, or None if input is blank.
+    """
+    is_valid = False
+    while not is_valid:
+        email = input("Email: ").strip()
+        if not email:
             return None
-        status = is_email_valid(email)
+        is_valid = is_email_valid(email)
     return email
 
 
-def get_username_password() -> tuple:
+def get_username_password() -> tuple[str, str]:
     """Prompt and validate username and password strings.
 
+    Prompts the user for a username matching the allowed pattern and
+    a secure password, then returns the hashed password.
+
     Returns:
-        tuple[str, str]
+        tuple[str, str]: A tuple of (username, hashed_password).
     """
     username = get_string("Username: ", r"^[A-Za-z0-9_ ]{3,24}$")
-    password = get_string("Password: ", r".{3,24}")
-    return username, password
+    entered_password = getpass.getpass("Password: ").strip()
+    hashed_password = hash_password(entered_password)
+    return username, hashed_password
 
 
-def get_string(input_string: str, pattern: str, get_groups: bool = False) -> str:
+def get_string(prompt: str, pattern: str, get_groups: bool = False) -> str | tuple:
     """Generic input prompt that enforces a regex pattern.
 
+    Continues prompting until the user input matches the specified regex pattern.
+    Optionally returns captured groups instead of the full match.
+
     Args:
-        input_string (str): prompt text.
-        pattern (str): regex pattern to match.
-        get_groups (bool): if True, return matching groups tuple.
+        prompt (str): The text to display when prompting for input.
+        pattern (str): The regex pattern that input must match.
+        get_groups (bool): If True, returns captured groups as a tuple.
 
     Returns:
-        str or tuple
+        str | tuple: The validated input string, or a tuple of captured groups.
     """
     while True:
-        string: str = input(input_string)
-        if captured := re.search(pattern, string):
-            if get_groups is True:
+        user_input: str = input(prompt).strip()
+        if captured := re.search(pattern, user_input):
+            if get_groups:
                 return tuple(g for g in captured.groups() if g is not None)
-            return string
-        print("Input is not valid")
+            return user_input
+        print("Input is not valid\n")
 
 
-def check_availability(username: str, file: str) -> bool:
-    """Check whether a username is already registered.
+def check_availability(username: str, accounts_file_path: str) -> bool:
+    """Check whether a username is already registered in the accounts file.
 
     Args:
-        username (str)
-        file (str): path to accounts CSV.
+        username (str): The username to check for availability.
+        accounts_file_path (str): Path to the accounts CSV file.
 
     Returns:
-        bool: True if username is available.
+        bool: True if the username is available, False if already taken.
     """
-    accounts = read_file(file,False)
+    accounts = read_file(accounts_file_path, print_file_empty=False)
     for acc in accounts:
         if acc.get("username") == username:
             print("\nUsername not available\n")
@@ -321,13 +397,13 @@ def check_availability(username: str, file: str) -> bool:
 
 
 def is_email_valid(email: str) -> bool:
-    """Validate email format using email_validator library.
+    """Validate email format using the email_validator library.
 
     Args:
-        email (str)
+        email (str): The email address to validate.
 
     Returns:
-        bool: True if valid, False otherwise.
+        bool: True if the email is valid, False otherwise.
     """
     try:
         validate_email(email, check_deliverability=False)

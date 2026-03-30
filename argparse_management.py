@@ -24,7 +24,7 @@ def parse_command_line():
 
 
 def check_login(username, password):
-    registered_accounts: list = read_file(file=accounts_path())
+    registered_accounts: list = read_file(file_path=accounts_path())
     user_account, user_index = find_account(username, password, registered_accounts)
     return user_account, user_index, registered_accounts
 
