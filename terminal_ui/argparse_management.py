@@ -28,6 +28,3 @@ def check_login(username, password):
     user_account, user_index = find_account(username, password, registered_accounts)
     return user_account, user_index, registered_accounts
 
-
-if __name__ == "__main__":
-    print(argparse_management())

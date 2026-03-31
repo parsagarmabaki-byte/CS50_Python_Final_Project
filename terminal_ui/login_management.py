@@ -15,6 +15,11 @@ import re
 import os
 
 
+def clear_terminal():
+    """Clear the terminal screen (cross-platform)."""
+    os.system("cls" if os.name == "nt" else "clear")
+
+
 class Account:
     """Represents a user account and manages its file directory.
 
@@ -32,7 +37,6 @@ class Account:
             Path: Path to the account directory.
         """
         base = Path(__file__).resolve().parent
-        # Go up one level from terminal_ui to project root
         project_root = base.parent
         directory = project_root.joinpath("csv_files", "account_directory")
         directory.mkdir(parents=True, exist_ok=True)
@@ -132,7 +136,7 @@ def login_options() -> int:
         )
         print()
         if choice == 3:
-            os.system("cls")
+            clear_terminal()
             sys.exit("EXIT SUCCESSFUL")
         return choice
 
@@ -315,7 +319,7 @@ def read_file(file_path: Path | str, print_file_empty: bool = True) -> list:
         for acc in reader:
             accounts.append(acc)
     if print_file_empty and not accounts:
-        os.system("cls")
+        clear_terminal()
         print("""=====================================
         FILES ARE EMPTY
 =====================================\n""")

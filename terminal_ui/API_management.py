@@ -68,8 +68,8 @@ def print_currency(currency_type: str = "base") -> None:
 
 
 def clear_terminal():
-    """Clear the Windows terminal screen."""
-    os.system("cls")
+    """Clear the terminal screen (cross-platform)."""
+    os.system("cls" if os.name == "nt" else "clear")
 
 
 def add_symbol(username: str) -> None:
@@ -413,7 +413,3 @@ def prompt_task(limit: int) -> str:
     """
     return get_string("Choice: ", f"^[1-{limit}]$")
 
-
-if __name__ == "__main__":
-    get_currency_data()
-    # print(last_n_day(7))

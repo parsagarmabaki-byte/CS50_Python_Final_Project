@@ -413,12 +413,14 @@ def account(user: dict, task: str | None) -> bool | None:
     Returns:
         bool | None: Returns True if account was deleted, None otherwise.
     """
-    clear_terminal()
     should_prompt: bool = False
+    clear_terminal()
     while task != "5":
         if should_prompt or task is None:
+            clear_terminal()
             print_account_submenu()
             task = prompt_task(limit=5)
+            print()
         if task == "1":
             clear_terminal()
             account_info(user)
@@ -518,6 +520,8 @@ def change_email(user: dict) -> None:
         )
         if prompt_confirmation():
             user["email"] = new_email
+            print("Updated successfully")
+            input("Press Enter to continue...")
             clear_terminal()
             break
 
@@ -551,6 +555,8 @@ def change_password(user: dict) -> None:
         if prompt_confirmation():
             hashed_password = hash_password(new_password_input)
             user["password"] = hashed_password
+            print("Updated successfully")
+            input("Press Enter to continue...")
             break
 
 
@@ -571,12 +577,3 @@ def account_info(user: dict) -> None:
     )
     print("----------------------------------------\n")
 
-
-if __name__ == "__main__":
-    user = {
-        "username": "Parsa Garmabaki",
-        "password": "parsa2006",
-        "email": "parsa.garmabaki@gmail.com",
-        "date": "02/23/26",
-    }
-    user_menu(user)
