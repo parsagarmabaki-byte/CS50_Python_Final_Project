@@ -74,7 +74,7 @@ def rewrite_account_list(accounts: List[Dict]) -> None:
     base = Path(__file__).resolve().parent
     project_root = base.parent
     path = project_root.joinpath("csv_files", "Accounts.csv")
-    
+
     with open(path, "w", newline="") as file:
         writer = csv.DictWriter(
             file, fieldnames=["username", "password", "email", "date"]

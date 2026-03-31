@@ -412,4 +412,3 @@ def prompt_task(limit: int) -> str:
         str: The chosen option as a string.
     """
     return get_string("Choice: ", f"^[1-{limit}]$")
-

@@ -180,7 +180,9 @@ def print_view_prices_submenu() -> None:
 """)
 
 
-def print_rates(data: dict[str, dict[str, float]], base_currency: str, quote_currency: str) -> None:
+def print_rates(
+    data: dict[str, dict[str, float]], base_currency: str, quote_currency: str
+) -> None:
     """Print fetched currency rates in tabular form.
 
     Args:
@@ -371,7 +373,7 @@ def print_prices(username: str) -> tuple[list, Path, int] | tuple[None, None, No
         error message and returns ``(None, None, None)``.
     """
     file_path = Path(account_files_path(username).joinpath("Prices.csv"))
-    prices = read_file(file_path,print_file_empty=True)
+    prices = read_file(file_path, print_file_empty=True)
     if not prices:
         return None, None, None
     symbols = group_symbols(prices)
@@ -452,7 +454,9 @@ def verification(user: dict) -> bool:
     print(f"""You are about to DELETE your account: {user['username']}
 This will remove: profile, watchlists, stored prices. This action is irreversible.""")
 
-    if check_user_password(user["password"], getpass.getpass("Old password (hidden): ")):
+    if check_user_password(
+        user["password"], getpass.getpass("Old password (hidden): ")
+    ):
         print("\nStep 2/3 — Confirm ")
         if getpass.getpass("Type 'EXACTLY' (hidden): ") != "EXACTLY":
             return False
@@ -539,7 +543,9 @@ def change_password(user: dict) -> None:
         None (user dict modified in-place).
     """
     while True:
-        if not check_user_password(user["password"], getpass.getpass("Old password (hidden): ")):
+        if not check_user_password(
+            user["password"], getpass.getpass("Old password (hidden): ")
+        ):
             print("\nWRONG PASSWORD\n")
             break
         new_password_input = getpass.getpass("New password (hidden): ")
@@ -576,4 +582,3 @@ def account_info(user: dict) -> None:
         f"Username : {user['username']}\nEmail    : {user['email']}\nCreated  : {user['date']}"
     )
     print("----------------------------------------\n")
-

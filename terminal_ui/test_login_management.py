@@ -5,7 +5,9 @@ import login_management as lm
 
 
 def test_accounts_path_creates_csv_with_header(tmp_path, monkeypatch):
-    monkeypatch.setattr(lm, "__file__", str(tmp_path / "terminal_ui" / "login_management.py"))
+    monkeypatch.setattr(
+        lm, "__file__", str(tmp_path / "terminal_ui" / "login_management.py")
+    )
 
     accounts_file = lm.accounts_path()
 
@@ -48,8 +50,7 @@ def test_hash_password_rejects_too_short_password():
 def test_read_file_returns_dict_rows_without_header(tmp_path):
     csv_file = tmp_path / "Accounts.csv"
     csv_file.write_text(
-        "username,password,email,date\n"
-        "alice,hashed,alice@example.com,03/30/26\n",
+        "username,password,email,date\n" "alice,hashed,alice@example.com,03/30/26\n",
         encoding="utf-8",
     )
 
@@ -66,7 +67,12 @@ def test_read_file_returns_dict_rows_without_header(tmp_path):
 def test_find_account_returns_matching_record_and_index():
     hashed = lm.hash_password("secret123")
     accounts = [
-        {"username": "alice", "password": hashed, "email": "a@a.com", "date": "03/30/26"},
+        {
+            "username": "alice",
+            "password": hashed,
+            "email": "a@a.com",
+            "date": "03/30/26",
+        },
         {"username": "bob", "password": hashed, "email": "b@b.com", "date": "03/30/26"},
     ]
 
@@ -79,7 +85,12 @@ def test_find_account_returns_matching_record_and_index():
 def test_find_account_returns_none_for_wrong_password():
     hashed = lm.hash_password("secret123")
     accounts = [
-        {"username": "alice", "password": hashed, "email": "a@a.com", "date": "03/30/26"}
+        {
+            "username": "alice",
+            "password": hashed,
+            "email": "a@a.com",
+            "date": "03/30/26",
+        }
     ]
 
     assert lm.find_account("alice", "wrong", accounts) == (None, None)
@@ -88,8 +99,7 @@ def test_find_account_returns_none_for_wrong_password():
 def test_check_availability_detects_taken_username(tmp_path):
     csv_file = tmp_path / "Accounts.csv"
     csv_file.write_text(
-        "username,password,email,date\n"
-        "alice,hashed,alice@example.com,03/30/26\n",
+        "username,password,email,date\n" "alice,hashed,alice@example.com,03/30/26\n",
         encoding="utf-8",
     )
 

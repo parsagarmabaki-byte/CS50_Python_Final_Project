@@ -215,11 +215,11 @@ def create_account() -> bool:
     """
     accounts_csv_path = accounts_path()
 
-    username=get_valid_username(accounts_csv_path)
+    username = get_valid_username(accounts_csv_path)
     if not username:
         return False
 
-    hashed_password=get_valid_password()
+    hashed_password = get_valid_password()
     if not hashed_password:
         return False
 
@@ -230,6 +230,7 @@ def create_account() -> bool:
     acc = Account(username, hashed_password, email)
     append_account(acc.username, acc.password, acc.email, accounts_csv_path)
     return True
+
 
 def get_valid_username(accounts_csv_path: Path) -> str | None:
     """Prompt the user for a valid username and check its availability.
@@ -254,6 +255,7 @@ def get_valid_username(accounts_csv_path: Path) -> str | None:
         username_available = check_availability(username, accounts_csv_path)
     return username
 
+
 def get_valid_password() -> str | None:
     """Prompt the user for a valid password and return its bcrypt hash.
 
@@ -263,13 +265,14 @@ def get_valid_password() -> str | None:
     Returns:
         str | None: The hashed password, or None if input is blank.
     """
-    hashed_password=None
+    hashed_password = None
     while not hashed_password:
         entered_password = getpass.getpass("Password (hidden): ").strip()
         if not entered_password:
             return None
         hashed_password = hash_password(entered_password)
     return hashed_password
+
 
 def append_account(
     username: str, password: str, email: str, accounts_file_path: str
