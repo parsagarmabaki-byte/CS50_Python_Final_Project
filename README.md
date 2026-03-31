@@ -117,11 +117,26 @@ The Terminal UI provides:
 
 ### Command-Line Arguments
 
-Login directly with credentials:
+Login with username (password prompted securely via hidden input):
 
 ```bash
-python terminal_ui/main.py -u username -p password
+python terminal_ui/main.py -u username
 ```
+
+**Note:** The password is always entered via secure hidden input (not visible on screen), similar to standard Unix login prompts.
+
+### Terminal UI Features
+
+- 🔐 **Bcrypt Password Hashing** — Secure password storage
+- 🔒 **Secure Input** — Passwords entered via hidden input (`getpass`)
+- ✅ **Input Validation**:
+  - Username: 3-24 characters (alphanumeric, underscore, space)
+  - Password: 3-24 characters
+  - Email: Validated using `email_validator` library
+- 📁 **Auto Account Setup** — Automatic creation of user directories and CSV files
+- 📊 **Watchlist Management** — Add/remove/view currency symbols
+- 💹 **Live Prices** — Fetch exchange rates from Frankfurter API
+- ⚙️ **Account Management** — Change email, password, or delete account
 
 ## Running the Web API (FastAPI)
 

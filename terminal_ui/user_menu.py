@@ -40,8 +40,7 @@ def print_user_menu(username: str) -> None:
     Returns:
         None: this function only prints to stdout.
     """
-    menu = f"""
-==============================
+    menu = f"""==============================
  MarketWatch — User Dashboard
  Logged in as: {username}
 ==============================
@@ -85,6 +84,7 @@ def user_menu(user: dict) -> Optional[dict]:
         Optional[dict]: The (potentially modified) user dict, or ``None`` if the
         account was deleted during the session.
     """
+    clear_terminal()
     submenu_choice: str = None
     task: str = None
     while submenu_choice != "0":
@@ -424,8 +424,8 @@ def account(user: dict, task: str | None) -> bool | None:
             task = prompt_task(limit=5)
             print()
         if task == "1":
-            clear_terminal()
             account_info(user)
+            input("Press Enter to continue...")
         elif task == "2":
             change_email(user)
         elif task == "3":
@@ -549,7 +549,6 @@ def change_password(user: dict) -> None:
             print("\nWRONG PASSWORD\n")
             break
         new_password_input = getpass.getpass("New password (hidden): ")
-        clear_terminal()
         if not new_password_input:
             break
         if (

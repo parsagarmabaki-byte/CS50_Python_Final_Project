@@ -1,11 +1,12 @@
 from argparse import ArgumentParser
-from login_management import accounts_path, read_file, find_account
+from getpass import getpass
+from login_management import accounts_path, read_file, find_account, check_availability
 
 
 def argparse_management():
-    args = parse_command_line()
-    if args is not None:
-        return check_login(args.username, args.password)
+    username, password = parse_command_line()
+    if username:
+        return check_login(username, password)
     return None, None, None
 
 
@@ -14,13 +15,15 @@ def parse_command_line():
     parser.add_argument(
         "-u", "--username", type=str, help="Enter the username for login"
     )
-    parser.add_argument(
-        "-p", "--password", type=str, help="Enter the password for login"
-    )
     args = parser.parse_args()
-    if args.username is None or args.password is None:
-        return None
-    return args
+
+    if not args.username or check_availability(args.username,accounts_path(),print_error=False):
+        return None, None
+    
+    entered_password = getpass("\nPassword (hidden): ")
+    return args.username,entered_password
+    
+    
 
 
 def check_login(username, password):

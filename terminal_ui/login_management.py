@@ -410,12 +410,13 @@ def get_string(prompt: str, pattern: str, get_groups: bool = False) -> str | tup
         print("Input is not valid\n")
 
 
-def check_availability(username: str, accounts_file_path: str) -> bool:
+def check_availability(username: str, accounts_file_path: str, print_error=True) -> bool:
     """Check whether a username is already registered in the accounts file.
 
     Args:
         username (str): The username to check for availability.
         accounts_file_path (str): Path to the accounts CSV file.
+        print_error (bool): If True, prints a message when username is already taken.
 
     Returns:
         bool: True if the username is available, False if already taken.
@@ -423,7 +424,8 @@ def check_availability(username: str, accounts_file_path: str) -> bool:
     accounts = read_file(accounts_file_path, print_file_empty=False)
     for acc in accounts:
         if acc.get("username") == username:
-            print("\nUsername not available\n")
+            if print_error:
+                print("\nUsername not available\n")
             return False
     return True
 
