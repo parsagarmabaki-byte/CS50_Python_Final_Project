@@ -8,7 +8,7 @@ from typing import Optional
 from login_management import (
     get_string,
     read_file,
-    enter_email,
+    get_valid_email,
     account_files_path,
     check_user_password,
     hash_password,
@@ -450,12 +450,12 @@ def verification(user: dict) -> bool:
     print(f"""You are about to DELETE your account: {user['username']}
 This will remove: profile, watchlists, stored prices. This action is irreversible.""")
 
-    if check_user_password(user["password"], getpass.getpass("Old password: ")):
+    if check_user_password(user["password"], getpass.getpass("Old password (hidden): ")):
         print("\nStep 2/3 — Confirm ")
-        if getpass.getpass("Type 'EXACTLY': ") != "EXACTLY":
+        if getpass.getpass("Type 'EXACTLY' (hidden): ") != "EXACTLY":
             return False
 
-        if getpass.getpass("Type 'DELETE' to confirm: ") != "DELETE":
+        if getpass.getpass("Type 'DELETE' to confirm (hidden): ") != "DELETE":
             return False
 
         print("\nStep 3/3 — Final confirmation")
@@ -480,7 +480,8 @@ def delete_account_with_verification(user: dict) -> bool:
         user_path = Path(account_files_path(user["username"]))
         shutil.rmtree(user_path)
         clear_terminal()
-        print("Deleting account...\n")
+        print("Deleting account...")
+        input("Press Enter to continue...")
         return True
     else:
         clear_terminal()
@@ -509,8 +510,8 @@ def change_email(user: dict) -> None:
         None (user dict modified in-place).
     """
     while True:
-        new_email = enter_email()
-        if new_email is None:
+        new_email = get_valid_email()
+        if not new_email:
             break
         print(
             f"Old Email: {user['email']}\nNew Email: {new_email}\n\nDo you want to change?"
@@ -534,15 +535,15 @@ def change_password(user: dict) -> None:
         None (user dict modified in-place).
     """
     while True:
-        if not check_user_password(user["password"], getpass.getpass("Old password: ")):
+        if not check_user_password(user["password"], getpass.getpass("Old password (hidden): ")):
             print("\nWRONG PASSWORD\n")
             break
-        new_password_input = getpass.getpass("New password: ")
+        new_password_input = getpass.getpass("New password (hidden): ")
         clear_terminal()
         if not new_password_input:
             break
         if (
-            getpass.getpass("Enter the new password again: ").strip()
+            getpass.getpass("Enter the new password again (hidden): ").strip()
             != new_password_input
         ):
             print("\nPASSWORD DONT MATCHED\n")

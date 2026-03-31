@@ -173,7 +173,7 @@ def prompt_login():
         if not username:
             return None, None, None
 
-        password = getpass.getpass("Password: ").strip()
+        password = getpass.getpass("Password (hidden): ").strip()
 
         registered_accounts: list = read_file(accounts_path(), print_file_empty=False)
         user_account, account_index = find_account(
@@ -196,38 +196,76 @@ def hash_password(entered_password: str) -> str:
     """
     if re.fullmatch(r".{3,24}", entered_password):
         return bcrypt.hashpw(entered_password.encode(), bcrypt.gensalt()).decode()
-    print("\nInvalid Password!\n\n")
+    print("\nInvalid Password!\n")
     return None
 
 
-def create_account() -> None:
+def create_account() -> bool:
     """Guide the user through creating a new account and persist it.
 
     Prompts for username, validates availability, then collects password
     and email. Creates the account directory and appends to the accounts CSV.
 
     Returns:
-        None
+        bool: True if account was created successfully, False otherwise.
     """
     accounts_csv_path = accounts_path()
+
+    username=get_valid_username(accounts_csv_path)
+    if not username:
+        return False
+
+    hashed_password=get_valid_password()
+    if not hashed_password:
+        return False
+
+    email = get_valid_email()
+    if not email:
+        return False
+
+    acc = Account(username, hashed_password, email)
+    append_account(acc.username, acc.password, acc.email, accounts_csv_path)
+    return True
+
+def get_valid_username(accounts_csv_path: Path) -> str | None:
+    """Prompt the user for a valid username and check its availability.
+
+    Continues prompting until a valid, available username is entered or
+    the user provides an empty input (which returns None).
+
+    Args:
+        accounts_csv_path (Path): Path to the accounts CSV file to check availability.
+
+    Returns:
+        str | None: The validated username, or None if input is blank.
+    """
     username_available = False
     while not username_available:
         username = input("Username: ").strip()
         if not username:
-            return
+            return None
         if not re.search(r"^[A-Za-z0-9_ ]{3,24}$", username):
             print("\nINVALID USERNAME\n")
             continue
         username_available = check_availability(username, accounts_csv_path)
+    return username
 
-    entered_password = getpass.getpass("Password: ").strip()
-    hashed_password = hash_password(entered_password)
+def get_valid_password() -> str | None:
+    """Prompt the user for a valid password and return its bcrypt hash.
 
-    email = enter_email()
+    Continues prompting until a valid password (3-24 characters) is entered
+    or the user provides an empty input (which returns None).
 
-    acc = Account(username, hashed_password, email)
-    append_account(acc.username, acc.password, acc.email, accounts_csv_path)
-
+    Returns:
+        str | None: The hashed password, or None if input is blank.
+    """
+    hashed_password=None
+    while not hashed_password:
+        entered_password = getpass.getpass("Password (hidden): ").strip()
+        if not entered_password:
+            return None
+        hashed_password = hash_password(entered_password)
+    return hashed_password
 
 def append_account(
     username: str, password: str, email: str, accounts_file_path: str
@@ -324,7 +362,7 @@ def check_user_password(stored_password: str, entered_password: str) -> bool:
     return False
 
 
-def enter_email() -> str | None:
+def get_valid_email() -> str | None:
     """Prompt the user for a valid email address.
 
     Continues prompting until a valid email is entered or the user
@@ -340,21 +378,6 @@ def enter_email() -> str | None:
             return None
         is_valid = is_email_valid(email)
     return email
-
-
-def get_username_password() -> tuple[str, str]:
-    """Prompt and validate username and password strings.
-
-    Prompts the user for a username matching the allowed pattern and
-    a secure password, then returns the hashed password.
-
-    Returns:
-        tuple[str, str]: A tuple of (username, hashed_password).
-    """
-    username = get_string("Username: ", r"^[A-Za-z0-9_ ]{3,24}$")
-    entered_password = getpass.getpass("Password: ").strip()
-    hashed_password = hash_password(entered_password)
-    return username, hashed_password
 
 
 def get_string(prompt: str, pattern: str, get_groups: bool = False) -> str | tuple:

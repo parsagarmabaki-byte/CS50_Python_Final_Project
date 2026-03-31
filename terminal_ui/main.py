@@ -9,22 +9,27 @@ from typing import List, Dict
 def main() -> None:
     """Entry point for the application.
 
-    Orchestrates login/registration and launches the user menu loop.  The
-    function maintains an in memory list of registered accounts and updates the
-    CSV file when the active user's information changes.  If ``user_menu``
-    returns ``None`` (because the account was deleted) the program exits the
-    main loop.
+    Orchestrates login/registration and launches the user menu loop. The
+    function maintains an in-memory list of registered accounts and updates the
+    CSV file when the active user's information changes. If ``user_menu``
+    returns ``None`` (because the account was deleted), the account is removed
+    from the list and the main loop continues.
     """
     user_account, user_index, registered_accounts = argparse_management()
-    times_runned = 1
+    need_login = False
     while True:
-        if user_account is None or times_runned > 1:
+        if user_account is None or need_login:
             clear_terminal()
             choice = login_options()
             if choice == 1:
                 user_account, user_index, registered_accounts = prompt_login()
             elif choice == 2:
-                create_account()
+                if create_account():
+                    print("\nREGISTRATION SUCCESSFUL")
+                    input("Press Enter to continue...")
+                else:
+                    print("\nREGISTRATION FAILED")
+                    input("Press Enter to continue...")
 
         if user_account:
             updated_user = user_menu(user_account)
@@ -35,7 +40,7 @@ def main() -> None:
                     registered_accounts, user_index, updated_user
                 )
             rewrite_account_list(registered_accounts)
-            times_runned += 1
+            need_login = True
 
 
 def update_user_info(
@@ -66,7 +71,6 @@ def rewrite_account_list(accounts: List[Dict]) -> None:
     Returns:
         None: Data is written to disk.
     """
-    # Calculate path relative to this module's location (terminal_ui)
     base = Path(__file__).resolve().parent
     project_root = base.parent
     path = project_root.joinpath("csv_files", "Accounts.csv")
