@@ -12,7 +12,6 @@ import os
 from pathlib import Path
 import re
 from datetime import date, timedelta
-from pprint import pprint
 
 
 def frankfurter_api(
@@ -412,3 +411,4 @@ def prompt_task(limit: int) -> str:
         str: The chosen option as a string.
     """
     return get_string("Choice: ", f"^[1-{limit}]$")
+
