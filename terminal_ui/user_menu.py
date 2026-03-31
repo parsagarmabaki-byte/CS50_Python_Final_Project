@@ -110,7 +110,6 @@ def prompt_choice() -> tuple[str, str | None]:
             get_groups=True,
         )
         if matched_groups[0] == "Q":
-            clear_terminal()
             sys.exit("System Exited")
         if len(matched_groups) == 2:
             return matched_groups[0], matched_groups[1]
@@ -165,7 +164,8 @@ def view_prices_menu(task: str | None, username: str) -> None:
             quote_currency: str
             data: dict[str, float]
             base_currency, quote_currency, data = get_currency_data()
-            print_rates(data, base_currency, quote_currency)
+            if base_currency:
+                print_rates(data, base_currency, quote_currency)
         elif task == "2":
             print_prices(username)
         should_prompt = True
@@ -173,7 +173,7 @@ def view_prices_menu(task: str | None, username: str) -> None:
 
 def print_view_prices_submenu() -> None:
     """Display submenu options for viewing prices."""
-    print("""View Prices
+    print("""3) View Prices
     1) Show prices for date range (optional)
     2) Show Watchlist prices
     3) Main options

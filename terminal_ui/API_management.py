@@ -83,7 +83,7 @@ def add_symbol(username: str) -> None:
     asset_choice = get_asset()
     if asset_choice == "1":
         base_currency, quote_currency = prompt_currencies()
-        if prompt_confirmation():
+        if base_currency and quote_currency:
             api_response = frankfurter_api(base=base_currency, symbols=quote_currency)
             for file_type in ["Watchlist", "Prices"]:
                 if file_type == "Watchlist":
@@ -314,12 +314,17 @@ def prompt_currencies() -> tuple[str, str]:
     available_currencies: list[str] = ["USD", "EUR", "GBP", "SEK", "DKK", "NOK"]
 
     print_currency()
-    base_currency = available_currencies[int(get_string("Choice: ", "^[1-7]$")) - 1]
-
+    try:
+        base_currency = available_currencies[int(get_string("Choice: ", "^[1-7]$")) - 1]
+    except IndexError:
+        return None, None
     print("\nBase currency: ", base_currency)
 
     print_currency(currency_type="quote")
-    quote_currency = available_currencies[int(get_string("Choice: ", "^[1-7]$")) - 1]
+    try:
+        quote_currency = available_currencies[int(get_string("Choice: ", "^[1-7]$")) - 1]
+    except IndexError:
+        return None, None
     clear_terminal()
     print(f"Base currency: {base_currency}\nQuote currency: {quote_currency}")
     return base_currency, quote_currency
@@ -342,23 +347,28 @@ def get_currency_data() -> tuple[str, str, dict]:
     """
     base_currency, quote_currency = prompt_currencies()
     clear_terminal()
-    print_currency_data_submenu(base_currency, quote_currency)
-    date_range_option = prompt_task(3)
-    end_date = date.today().isoformat()
-    if date_range_option == "1":
-        days = int(get_string("Enter the range of days: ", r"^\d\d?$"))
-        start_date = last_n_day(business_days=days)
-    elif date_range_option == "2":
-        start_date = last_n_day(business_days=7)
-    elif date_range_option == "3":
-        start_date = get_string("Enter start date (YYYY-MM-DD): ", r"^\d{4}-\d\d-\d\d$")
-        end_date = get_string(
-            "Enter end date press enter to skip: ", r"^(\d{4}-\d\d-\d\d)?$"
-        )
-        if not end_date:
-            end_date = None
-    api_response = frankfurter_api(base_currency, quote_currency, start_date, end_date)
-    return base_currency, quote_currency, api_response["rates"]
+    if base_currency and quote_currency:
+        print_currency_data_submenu(base_currency, quote_currency)
+        date_range_option = prompt_task(4)
+        end_date = date.today().isoformat()
+        if date_range_option == "1":
+            days = int(get_string("Enter the range of days: ", r"^\d\d?$"))
+            start_date = last_n_day(business_days=days)
+        elif date_range_option == "2":
+            start_date = last_n_day(business_days=7)
+        elif date_range_option == "3":
+            start_date = get_string("Enter start date (YYYY-MM-DD): ", r"^\d{4}-\d\d-\d\d$")
+            end_date = get_string(
+                "Enter end date press enter to skip: ", r"^(\d{4}-\d\d-\d\d)?$"
+            )
+            if not end_date:
+                end_date = None
+        elif date_range_option == "4":
+            clear_terminal()
+            return None, None, None
+        api_response = frankfurter_api(base_currency, quote_currency, start_date, end_date)
+        return base_currency, quote_currency, api_response["rates"]
+    return None, None, None
 
 
 def print_currency_data_submenu(base_currency: str, quote_currency: str) -> None:

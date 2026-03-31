@@ -407,7 +407,7 @@ def get_string(prompt: str, pattern: str, get_groups: bool = False) -> str | tup
             if get_groups:
                 return tuple(g for g in captured.groups() if g is not None)
             return user_input
-        print("Input is not valid\n")
+        print("\nInput is not valid\n")
 
 
 def check_availability(username: str, accounts_file_path: str, print_error=True) -> bool:
