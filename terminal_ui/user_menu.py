@@ -88,6 +88,7 @@ def user_menu(user: dict) -> Optional[dict]:
     submenu_choice: str = None
     task: str = None
     while submenu_choice != "0":
+        clear_terminal()
         print_user_menu(user["username"])
         submenu_choice, task = prompt_choice()
         if dispatch_menu(user, submenu_choice, task):
@@ -142,132 +143,6 @@ def dispatch_menu(user: dict, submenu: str, task: str | None) -> bool | None:
             return True
 
 
-def view_prices_menu(task: str | None, username: str) -> None:
-    """Handle the "View prices" submenu loop.
-
-    Args:
-        task (str | None): Current subtask or None.
-        username (str): The user's name (used for file paths).
-
-    Returns:
-        None
-    """
-    clear_terminal()
-    should_prompt: bool = False
-    while task != "3":
-        if should_prompt or task is None:
-            print_view_prices_submenu()
-            task = prompt_task(limit=3)
-            clear_terminal()
-        if task == "1":
-            base_currency: str
-            quote_currency: str
-            data: dict[str, float]
-            base_currency, quote_currency, data = get_currency_data()
-            if base_currency:
-                print_rates(data, base_currency, quote_currency)
-        elif task == "2":
-            print_prices(username)
-        should_prompt = True
-
-
-def print_view_prices_submenu() -> None:
-    """Display submenu options for viewing prices."""
-    print("""3) View Prices
-    1) Show prices for date range (optional)
-    2) Show Watchlist prices
-    3) Main options
-""")
-
-
-def print_rates(
-    data: dict[str, dict[str, float]], base_currency: str, quote_currency: str
-) -> None:
-    """Print fetched currency rates in tabular form.
-
-    Args:
-        data (dict[str, dict[str, float]]): Mapping of dates to rate values.
-        base_currency (str): Base currency code.
-        quote_currency (str): Quote currency code.
-
-    Returns:
-        None
-    """
-    print(f"""
-=====================================
-             {base_currency}/{quote_currency}
-=====================================
-
-  #   Date           Prices
--------------------------------------""")
-    for index, (date, rate) in enumerate(data.items(), 1):
-        print(f"  {index:<2}  {date}     {rate[quote_currency]:.2f}")
-    print("-------------------------------------\n")
-
-
-def update_price_menu(task: str | None, username: str) -> None:
-    """Manage the "Update prices" submenu loop.
-
-    Args:
-        task (str | None): Current subtask or None.
-        username (str): The user's name.
-
-    Returns:
-        None
-    """
-    clear_terminal()
-    should_prompt: bool = False
-    while task != "3":
-        if should_prompt or task is None:
-            print_update_price_submenu()
-            task = prompt_task(limit=3)
-            clear_terminal()
-        if task == "1":
-            update_prices(username)
-        elif task == "2":
-            update_symbol(username)
-        should_prompt = True
-
-
-def update_symbol(username: str) -> None:
-    """Update a single symbol's price in the user's price file.
-
-    Displays the watchlist, prompts for symbol selection, and fetches
-    the latest price data for the selected symbol.
-
-    Args:
-        username (str): The username used to locate files.
-
-    Returns:
-        None
-    """
-    watchlist_items, file_path, last_index = print_watchlist(username, "Watchlist")
-    if watchlist_items is None and file_path is None and last_index is None:
-        return None
-    selection = int(get_string("\nChoice: ", f"^[0-{last_index + 1}]$"))
-    if selection != last_index + 1:
-        symbols = group_symbols([watchlist_items[selection]], symbol_key="Stocks")
-        base_currency, quote_currency = symbols[0]
-        price, date = update_symbol_data(base_currency, quote_currency)
-
-        prices_list = read_file(
-            Path(account_files_path(username).joinpath("Prices.csv"))
-        )
-        prices_list[selection]["price"] = price
-        prices_list[selection]["date"] = date
-        rewrite_prices_file(username, prices_list)
-        print()
-
-
-def print_update_price_submenu() -> None:
-    """Display the submenu for the price update options."""
-    print("""2) Update prices
-    1) Update all watchlist symbols (latest)
-    2) Update one symbol
-    3) Main options
-    """)
-
-
 def watchlist(username: str, task: str | None) -> None:
     """Handle the watchlist submenu actions.
 
@@ -285,46 +160,27 @@ def watchlist(username: str, task: str | None) -> None:
     should_prompt: bool = False
     while task != "4":
         if should_prompt or task is None:
+            clear_terminal()
             print_watchlist_submenu()
             task = prompt_task(limit=4)
-            clear_terminal()
         if task == "1":
             print_watchlist(username, "Watchlist")
+            input("Press Enter to continue...")
         elif task == "2":
             add_symbol(username)
-            clear_terminal()
         elif task == "3":
             remove_symbol(username)
         should_prompt = True
 
 
-def remove_symbol(username: str) -> None:
-    """Remove a symbol from the user's watchlist and prices.
-
-    Displays the watchlist, prompts for symbol selection, and removes
-    the selected symbol from both watchlist and prices files.
-
-    Args:
-        username (str): The username used internally as folder name.
-
-    Returns:
-        None
-    """
-    symbols, file_path, last_index = print_watchlist(username, "Remove symbol")
-    if symbols is None and file_path is None and last_index is None:
-        return None
-    prices_content: list = read_file(
-        Path(account_files_path(username).joinpath("Prices.csv"))
-    )
-    try:
-        selection = int(get_string("\nChoice: ", f"^[0-{last_index}]?$"))
-        if selection != last_index + 1:
-            symbols.pop(selection)
-            prices_content.pop(selection)
-            rewrite_watchlist_file(username, symbols)
-            rewrite_prices_file(username, prices_content)
-    except ValueError:
-        pass
+def print_watchlist_submenu() -> None:
+    """Print options for managing the watchlist."""
+    print("""1) Watchlist
+    1) View watchlist
+    2) Add symbol (e.g., FX:USDSEK)
+    3) Remove symbol
+    4) Main menu
+          """)
 
 
 def print_watchlist(
@@ -360,6 +216,170 @@ def print_watchlist(
     return symbols, file_path, index
 
 
+def remove_symbol(username: str) -> None:
+    """Remove a symbol from the user's watchlist and prices.
+
+    Displays the watchlist, prompts for symbol selection, and removes
+    the selected symbol from both watchlist and prices files.
+
+    Args:
+        username (str): The username used internally as folder name.
+
+    Returns:
+        None
+    """
+    symbols, file_path, last_index = print_watchlist(username, "Remove symbol")
+    if symbols is None and file_path is None and last_index is None:
+        input("Press Enter to continue...")
+        return None
+
+    prices_content: list = read_file(
+        Path(account_files_path(username).joinpath("Prices.csv"))
+    )
+    try:
+        selection = int(get_string("\nChoice: ", f"^[0-{last_index}]?$"))
+    except ValueError:
+        return None
+    symbols.pop(selection)
+    prices_content.pop(selection)
+    rewrite_watchlist_file(username, symbols)
+    rewrite_prices_file(username, prices_content)
+    print("\nSymbol removed successfully.")
+    input("Press Enter to continue...")
+
+
+def update_price_menu(task: str | None, username: str) -> None:
+    """Manage the "Update prices" submenu loop.
+
+    Args:
+        task (str | None): Current subtask or None.
+        username (str): The user's name.
+
+    Returns:
+        None
+    """
+    clear_terminal()
+    should_prompt: bool = False
+    while task != "3":
+        if should_prompt or task is None:
+            clear_terminal()
+            print_update_price_submenu()
+            task = prompt_task(limit=3)
+        if task == "1":
+            update_prices(username)
+        elif task == "2":
+            update_symbol(username)
+        should_prompt = True
+
+
+def print_update_price_submenu() -> None:
+    """Display the submenu for the price update options."""
+    print("""2) Update prices
+    1) Update all watchlist symbols (latest)
+    2) Update one symbol
+    3) Main options
+    """)
+
+
+def update_symbol(username: str) -> None:
+    """Update a single symbol's price in the user's price file.
+
+    Displays the watchlist, prompts for symbol selection, and fetches
+    the latest price data for the selected symbol.
+
+    Args:
+        username (str): The username used to locate files.
+
+    Returns:
+        None
+    """
+    watchlist_items, file_path, last_index = print_watchlist(username, "Watchlist")
+    if watchlist_items is None and file_path is None and last_index is None:
+        return None
+    selection = int(get_string("\nChoice: ", f"^[0-{last_index + 1}]$"))
+    if selection != last_index + 1:
+        symbols = group_symbols([watchlist_items[selection]], symbol_key="Stocks")
+        base_currency, quote_currency = symbols[0]
+        price, date = update_symbol_data(base_currency, quote_currency)
+
+        prices_list = read_file(
+            Path(account_files_path(username).joinpath("Prices.csv"))
+        )
+        prices_list[selection]["price"] = price
+        prices_list[selection]["date"] = date
+        rewrite_prices_file(username, prices_list)
+        print("\nCurrency Pairs Updated")
+        input("Press Enter to continue...")
+
+
+def view_prices_menu(task: str | None, username: str) -> None:
+    """Handle the "View prices" submenu loop.
+
+    Args:
+        task (str | None): Current subtask or None.
+        username (str): The user's name (used for file paths).
+
+    Returns:
+        None
+    """
+    clear_terminal()
+    should_prompt: bool = False
+    while task != "3":
+        if should_prompt or task is None:
+            clear_terminal()
+            print_view_prices_submenu()
+            task = prompt_task(limit=3)
+        if task == "1":
+            base_currency: str
+            quote_currency: str
+            data: dict[str, float]
+            base_currency, quote_currency, data = get_currency_data()
+            if base_currency:
+                print_rates(data, base_currency, quote_currency)
+                input("Press Enter to continue...")
+        elif task == "2":
+            print_prices(username)
+            input("Press Enter to continue...")
+        should_prompt = True
+
+
+def print_view_prices_submenu() -> None:
+    """Display submenu options for viewing prices."""
+    print("""3) View Prices
+    1) Show prices for date range (optional)
+    2) Show Watchlist prices
+    3) Main options
+""")
+
+
+def print_rates(
+    data: dict[str, dict[str, float]], base_currency: str, quote_currency: str
+) -> None:
+    """Print fetched currency rates in tabular form.
+
+    Args:
+        data (dict[str, dict[str, float]]): Mapping of dates to rate values.
+        base_currency (str): Base currency code.
+        quote_currency (str): Quote currency code.
+
+    Returns:
+        None
+    """
+    print(f"""
+=====================================
+            {base_currency}/{quote_currency}
+=====================================
+
+#   Date           Prices
+-------------------------------------""")
+    try:
+        for index, (date, rate) in enumerate(data.items(), 1):
+            print(f"  {index:<2}  {date}     {rate[quote_currency]:.2f}")
+        print("-------------------------------------\n")
+    except TypeError:
+        print("\nDate is not valid")
+
+
 def print_prices(username: str) -> tuple[list, Path, int] | tuple[None, None, None]:
     """Display prices stored for the user.
 
@@ -378,9 +398,9 @@ def print_prices(username: str) -> tuple[list, Path, int] | tuple[None, None, No
         return None, None, None
     symbols = group_symbols(prices)
     print(f"""
-=====================================
-            Prices
-=====================================
+===================================================================
+                            Prices
+===================================================================
 
   #     Symbol     Price       Date           Source
 -------------------------------------------------------------------""")
@@ -390,16 +410,6 @@ def print_prices(username: str) -> tuple[list, Path, int] | tuple[None, None, No
         )
     print("-------------------------------------------------------------------\n\n")
     return prices, file_path, index
-
-
-def print_watchlist_submenu() -> None:
-    """Print options for managing the watchlist."""
-    print("""1) Watchlist
-    1) View watchlist
-    2) Add symbol (e.g., FX:USDSEK)
-    3) Remove symbol
-    4) Main menu
-          """)
 
 
 def account(user: dict, task: str | None) -> bool | None:
@@ -435,6 +445,96 @@ def account(user: dict, task: str | None) -> bool | None:
                 return True
         should_prompt = True
     clear_terminal()
+
+
+def print_account_submenu() -> None:
+    """Display account menu options."""
+    print("""4) Account
+   1) Show account info (username/email)
+   2) Change email (optional)
+   3) Change password (optional)
+   4) Delete account (danger)
+   5) Main options
+""")
+
+
+def account_info(user: dict) -> None:
+    """Print the account information for the given user dictionary.
+
+    Args:
+        user (dict): Must contain username, email, and date fields.
+
+    Returns:
+        None
+    """
+    print("""=====================================
+        Account Information
+=====================================""")
+    print(
+        f"Username : {user['username']}\nEmail    : {user['email']}\nCreated  : {user['date']}"
+    )
+    print("--------------------------------------\n")
+
+
+def change_email(user: dict) -> None:
+    """Prompt the user to update their email address.
+
+    Args:
+        user (dict): Contains existing email to replace.
+
+    Returns:
+        None (user dict modified in-place).
+    """
+    while True:
+        new_email = get_valid_email()
+        if not new_email:
+            break
+        print(
+            f"Old Email: {user['email']}\nNew Email: {new_email}\n\nDo you want to change?"
+        )
+        if prompt_confirmation():
+            user["email"] = new_email
+            print("\nUpdated successfully")
+            input("Press Enter to continue...")
+            clear_terminal()
+            return
+        print()
+
+
+def change_password(user: dict) -> None:
+    """Interactively change the user's password.
+
+    Prompts for the old password for verification, then asks for a new
+    password twice to confirm. Updates the user dict if confirmed.
+
+    Args:
+        user (dict): User data to update.
+
+    Returns:
+        None (user dict modified in-place).
+    """
+    while True:
+        if not check_user_password(
+            user["password"], getpass.getpass("Old password (hidden): ")
+        ):
+            print("\nWRONG PASSWORD\n")
+            break
+        new_password_input = getpass.getpass("New password (hidden): ")
+        if not new_password_input:
+            break
+        if (
+            getpass.getpass("Enter the new password again (hidden): ").strip()
+            != new_password_input
+        ):
+            print("\nPASSWORD DONT MATCHED\n")
+            continue
+        if prompt_confirmation():
+            hashed_password = hash_password(new_password_input)
+            user["password"] = hashed_password
+            print("Updated successfully")
+            input("Press Enter to continue...")
+            return
+        print()
 
 
 def verification(user: dict) -> bool:
@@ -485,99 +585,10 @@ def delete_account_with_verification(user: dict) -> bool:
     if verification(user):
         user_path = Path(account_files_path(user["username"]))
         shutil.rmtree(user_path)
-        clear_terminal()
-        print("Deleting account...")
+        print("\nAccount Deleted...")
         input("Press Enter to continue...")
         return True
     else:
-        clear_terminal()
-        print("VERIFICATION FAILED\n")
+        print("\nVERIFICATION FAILED")
+        input("Press Enter to continue...")
         return False
-
-
-def print_account_submenu() -> None:
-    """Display account menu options."""
-    print("""4) Account
-   1) Show account info (username/email)
-   2) Change email (optional)
-   3) Change password (optional)
-   4) Delete account (danger)
-   5) Main options
-""")
-
-
-def change_email(user: dict) -> None:
-    """Prompt the user to update their email address.
-
-    Args:
-        user (dict): Contains existing email to replace.
-
-    Returns:
-        None (user dict modified in-place).
-    """
-    while True:
-        new_email = get_valid_email()
-        if not new_email:
-            break
-        print(
-            f"Old Email: {user['email']}\nNew Email: {new_email}\n\nDo you want to change?"
-        )
-        if prompt_confirmation():
-            user["email"] = new_email
-            print("Updated successfully")
-            input("Press Enter to continue...")
-            clear_terminal()
-            break
-
-
-def change_password(user: dict) -> None:
-    """Interactively change the user's password.
-
-    Prompts for the old password for verification, then asks for a new
-    password twice to confirm. Updates the user dict if confirmed.
-
-    Args:
-        user (dict): User data to update.
-
-    Returns:
-        None (user dict modified in-place).
-    """
-    while True:
-        if not check_user_password(
-            user["password"], getpass.getpass("Old password (hidden): ")
-        ):
-            print("\nWRONG PASSWORD\n")
-            break
-        new_password_input = getpass.getpass("New password (hidden): ")
-        if not new_password_input:
-            break
-        if (
-            getpass.getpass("Enter the new password again (hidden): ").strip()
-            != new_password_input
-        ):
-            print("\nPASSWORD DONT MATCHED\n")
-            continue
-        if prompt_confirmation():
-            hashed_password = hash_password(new_password_input)
-            user["password"] = hashed_password
-            print("Updated successfully")
-            input("Press Enter to continue...")
-            break
-
-
-def account_info(user: dict) -> None:
-    """Print the account information for the given user dictionary.
-
-    Args:
-        user (dict): Must contain username, email, and date fields.
-
-    Returns:
-        None
-    """
-    print("""=====================================
-        Account Information
-=====================================""")
-    print(
-        f"Username : {user['username']}\nEmail    : {user['email']}\nCreated  : {user['date']}"
-    )
-    print("----------------------------------------\n")

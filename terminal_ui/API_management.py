@@ -48,22 +48,27 @@ def get_asset() -> str:
     Returns:
         str: Choice '1' (Forex) or '2' (Back).
     """
-    print("Select asset type:\n1) Forex\n2) Back")
-    return get_string("Choice: ", "^[1-2]$")
+    print("\nSelect asset type:\n1) Forex\n2) Back")
+    return get_string("\nChoice: ", "^[1-2]$")
 
 
-def print_currency(currency_type: str = "base") -> None:
-    """Display currency selection menu.
+def print_currency(currency_type: str = "base", currencies:list=None) -> None:
+    """Display currency selection menu for base or quote currency.
+
+    Prints a numbered list of available currencies plus a 'Back' option.
+    The menu title adjusts based on whether the user is selecting the
+    base or quote currency.
 
     Args:
-        currency_type (str): Either 'base' or 'quote' to adjust wording.
+        currency_type (str): Either 'base' or 'quote' to adjust the menu wording.
+        currencies (list): List of currency codes to display.
 
     Returns:
         None
     """
-    print(
-        f"\nSelect the {currency_type} currency:\n1) USD\n2) EUR\n3) GBP\n4) SEK\n5) DKK\n6) NOK\n7) Back"
-    )
+    for i, currency in enumerate(currencies):
+        print(f"{i+1}) {currency}")
+    print(f"{i+2}) Back")
 
 
 def clear_terminal():
@@ -99,6 +104,7 @@ def add_symbol(username: str) -> None:
                         quote_currency=quote_currency,
                         api_content=api_response,
                     )
+            input("\nSymbol added successfully.\nPress Enter to continue...")
 
 
 def append_to_watchlist(username: str, base_currency: str, quote_currency: str) -> None:
@@ -140,6 +146,8 @@ def update_prices(username: str) -> None:
     updated_content = update_data(symbols)
     clear_prices_file(username)
     updating_data(symbols, username, updated_content)
+    print("\nCurrency Pairs Updated")
+    input("Press Enter to continue...")
 
 
 def clear_prices_file(username: str) -> None:
@@ -313,20 +321,23 @@ def prompt_currencies() -> tuple[str, str]:
     """
     available_currencies: list[str] = ["USD", "EUR", "GBP", "SEK", "DKK", "NOK"]
 
-    print_currency()
+    print_currency(currencies=available_currencies)
     try:
-        base_currency = available_currencies[int(get_string("Choice: ", "^[1-7]$")) - 1]
+        index=int(get_string("Choice: ", "^[1-7]$")) - 1
+        base_currency = available_currencies[index]
+        available_currencies.pop(index)
     except IndexError:
         return None, None
     print("\nBase currency: ", base_currency)
 
-    print_currency(currency_type="quote")
+    print_currency(currency_type="quote",currencies=available_currencies)
     try:
-        quote_currency = available_currencies[int(get_string("Choice: ", "^[1-7]$")) - 1]
+        quote_currency = available_currencies[
+            int(get_string("Choice: ", "^[1-6]$")) - 1
+        ]
     except IndexError:
         return None, None
-    clear_terminal()
-    print(f"Base currency: {base_currency}\nQuote currency: {quote_currency}")
+    print(f"\nBase currency: {base_currency}\nQuote currency: {quote_currency}")
     return base_currency, quote_currency
 
 
@@ -357,7 +368,9 @@ def get_currency_data() -> tuple[str, str, dict]:
         elif date_range_option == "2":
             start_date = last_n_day(business_days=7)
         elif date_range_option == "3":
-            start_date = get_string("Enter start date (YYYY-MM-DD): ", r"^\d{4}-\d\d-\d\d$")
+            start_date = get_string(
+                "Enter start date (YYYY-MM-DD): ", r"^\d{4}-\d\d-\d\d$"
+            )
             end_date = get_string(
                 "Enter end date press enter to skip: ", r"^(\d{4}-\d\d-\d\d)?$"
             )
@@ -366,7 +379,9 @@ def get_currency_data() -> tuple[str, str, dict]:
         elif date_range_option == "4":
             clear_terminal()
             return None, None, None
-        api_response = frankfurter_api(base_currency, quote_currency, start_date, end_date)
+        api_response = frankfurter_api(
+            base_currency, quote_currency, start_date, end_date
+        )
         return base_currency, quote_currency, api_response["rates"]
     return None, None, None
 
@@ -421,4 +436,3 @@ def prompt_task(limit: int) -> str:
         str: The chosen option as a string.
     """
     return get_string("Choice: ", f"^[1-{limit}]$")
-

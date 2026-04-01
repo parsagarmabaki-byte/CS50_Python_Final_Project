@@ -24,12 +24,11 @@ def main() -> None:
             if choice == 1:
                 user_account, user_index, registered_accounts = prompt_login()
             elif choice == 2:
+                user_account = None
                 if create_account():
-                    print("\nREGISTRATION SUCCESSFUL")
-                    input("Press Enter to continue...")
+                    input("\nREGISTRATION SUCCESSFUL\nPress Enter to continue...")
                 else:
-                    print("\nREGISTRATION FAILED")
-                    input("Press Enter to continue...")
+                    input("\nREGISTRATION FAILED\nPress Enter to continue...")
 
         if user_account:
             updated_user = user_menu(user_account)

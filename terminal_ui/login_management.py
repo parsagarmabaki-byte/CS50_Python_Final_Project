@@ -151,7 +151,6 @@ def accounts_path():
         Path: Path to the Accounts.csv file.
     """
     base = Path(__file__).resolve().parent
-    # Go up one level from terminal_ui to project root
     project_root = base.parent
     directory = project_root.joinpath("csv_files")
     directory.mkdir(parents=True, exist_ok=True)
@@ -410,7 +409,9 @@ def get_string(prompt: str, pattern: str, get_groups: bool = False) -> str | tup
         print("\nInput is not valid\n")
 
 
-def check_availability(username: str, accounts_file_path: str, print_error=True) -> bool:
+def check_availability(
+    username: str, accounts_file_path: str, print_error=True
+) -> bool:
     """Check whether a username is already registered in the accounts file.
 
     Args:

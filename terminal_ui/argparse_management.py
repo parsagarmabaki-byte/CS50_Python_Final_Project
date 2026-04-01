@@ -17,13 +17,13 @@ def parse_command_line():
     )
     args = parser.parse_args()
 
-    if not args.username or check_availability(args.username,accounts_path(),print_error=False):
+    if not args.username or check_availability(
+        args.username, accounts_path(), print_error=False
+    ):
         return None, None
-    
+
     entered_password = getpass("\nPassword (hidden): ")
-    return args.username,entered_password
-    
-    
+    return args.username, entered_password
 
 
 def check_login(username, password):
