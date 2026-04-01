@@ -284,8 +284,9 @@ def print_update_price_submenu() -> None:
 def update_symbol(username: str) -> None:
     """Update a single symbol's price in the user's price file.
 
-    Displays the watchlist, prompts for symbol selection, and fetches
-    the latest price data for the selected symbol.
+    Displays the watchlist, prompts for symbol selection, fetches the latest
+    price data from the Frankfurter API, and updates the corresponding entry
+    in Prices.csv.
 
     Args:
         username (str): The username used to locate files.
@@ -295,21 +296,25 @@ def update_symbol(username: str) -> None:
     """
     watchlist_items, file_path, last_index = print_watchlist(username, "Watchlist")
     if watchlist_items is None and file_path is None and last_index is None:
-        return None
-    selection = int(get_string("\nChoice: ", f"^[0-{last_index + 1}]$"))
-    if selection != last_index + 1:
-        symbols = group_symbols([watchlist_items[selection]], symbol_key="Stocks")
-        base_currency, quote_currency = symbols[0]
-        price, date = update_symbol_data(base_currency, quote_currency)
-
-        prices_list = read_file(
-            Path(account_files_path(username).joinpath("Prices.csv"))
-        )
-        prices_list[selection]["price"] = price
-        prices_list[selection]["date"] = date
-        rewrite_prices_file(username, prices_list)
-        print("\nCurrency Pairs Updated")
         input("Press Enter to continue...")
+        return
+    try:
+        selection = int(get_string("\nChoice: ", f"^[0-{last_index}]?$"))
+    except ValueError:
+        return None
+    symbols = group_symbols([watchlist_items[selection]], symbol_key="Stocks")
+    base_currency, quote_currency = symbols[0]
+    price, date = update_symbol_data(base_currency, quote_currency)
+    if not price or not date:
+        return
+    prices_list = read_file(
+        Path(account_files_path(username).joinpath("Prices.csv"))
+    )
+    prices_list[selection]["price"] = price
+    prices_list[selection]["date"] = date
+    rewrite_prices_file(username, prices_list)
+    print("\nCurrency Pairs Updated")
+    input("Press Enter to continue...")
 
 
 def view_prices_menu(task: str | None, username: str) -> None:

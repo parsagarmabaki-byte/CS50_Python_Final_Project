@@ -19,17 +19,22 @@ def frankfurter_api(
     symbols: str | None = None,
     start_date: str | None = None,
     end_date: str | None = None,
-) -> dict:
+) -> dict | None:
     """Query the Frankfurter currency API for exchange rates.
+
+    Supports both latest rates and historical rate ranges. Handles connection
+    errors gracefully by returning None instead of raising an exception.
 
     Args:
         base (str): Base currency code (default: "USD").
-        symbols (str | None): Target currency codes, comma-separated.
-        start_date (str | None): Start date in YYYY-MM-DD format or range start.
-        end_date (str | None): End date in YYYY-MM-DD format.
+        symbols (str | None): Target currency code (e.g., "EUR", "SEK").
+        start_date (str | None): Start date in YYYY-MM-DD format. If provided,
+            fetches historical data from this date.
+        end_date (str | None): End date in YYYY-MM-DD format. Only used with
+            start_date for date range queries.
 
     Returns:
-        dict: Parsed JSON response from the API.
+        dict | None: Parsed JSON response with rates data, or None if connection fails.
     """
     if start_date:
         url = f"https://api.frankfurter.app/{start_date}?from={base}&to={symbols}"
@@ -37,9 +42,27 @@ def frankfurter_api(
             url = f"https://api.frankfurter.app/{start_date}..{end_date}?from={base}&to={symbols}"
     else:
         url = f"https://api.frankfurter.dev/v1/latest?base={base}&symbols={symbols}"
-
-    response = requests.get(url)
+    try:
+        response = requests.get(url)
+    except requests.exceptions.ConnectionError:
+       return 
     return response.json()
+
+
+def print_connection_error() -> None:
+    """Display an error message when no internet connection is detected.
+
+    Prints a formatted error message informing the user about connection issues
+    and waits for user acknowledgment before continuing.
+
+    Returns:
+        None
+    """
+    print("""\n----------------------------------------
+ERROR: No internet connection.
+Check your network and try again.
+----------------------------------------""")
+    input("\nPress Enter to continue...")
 
 
 def get_asset() -> str:
@@ -79,6 +102,10 @@ def clear_terminal():
 def add_symbol(username: str) -> None:
     """Add a new FX symbol to the user's watchlist and prices.
 
+    Prompts the user to select base and quote currencies, fetches the current
+    exchange rate from the Frankfurter API, and appends entries to both the
+    Watchlist.csv and Prices.csv files.
+
     Args:
         username (str): Account folder name.
 
@@ -90,6 +117,9 @@ def add_symbol(username: str) -> None:
         base_currency, quote_currency = prompt_currencies()
         if base_currency and quote_currency:
             api_response = frankfurter_api(base=base_currency, symbols=quote_currency)
+            if not api_response:
+                print_connection_error()
+                return
             for file_type in ["Watchlist", "Prices"]:
                 if file_type == "Watchlist":
                     append_to_watchlist(
@@ -110,10 +140,13 @@ def add_symbol(username: str) -> None:
 def append_to_watchlist(username: str, base_currency: str, quote_currency: str) -> None:
     """Append a forex symbol string to the watchlist CSV.
 
+    Writes a new row to the user's Watchlist.csv with the formatted symbol
+    string (e.g., "FX:USDSEK").
+
     Args:
-        username (str): Username directory.
-        base_currency (str): Base currency code.
-        quote_currency (str): Quote currency code.
+        username (str): Username directory name.
+        base_currency (str): Base currency code (e.g., "USD").
+        quote_currency (str): Quote currency code (e.g., "SEK").
 
     Returns:
         None
@@ -141,9 +174,13 @@ def update_prices(username: str) -> None:
     file_path = Path(account_files_path(username).joinpath("Prices.csv"))
     price_records = read_file(file_path)
     if not price_records:
+        input("Press Enter to continue...")
         return None
     symbols: list = group_symbols(price_records)
     updated_content = update_data(symbols)
+    if not updated_content:
+        print_connection_error()
+        return None
     clear_prices_file(username)
     updating_data(symbols, username, updated_content)
     print("\nCurrency Pairs Updated")
@@ -207,32 +244,44 @@ def group_symbols(
     return symbols
 
 
-def update_data(symbols: list[tuple[str, str]]) -> list[dict]:
-    """Fetch fresh API data for each symbol tuple in list.
+def update_data(symbols: list[tuple[str, str]]) -> list[dict] | None:
+    """Fetch fresh API data for each symbol tuple in the list.
+
+    Iterates through the provided currency pairs and queries the Frankfurter API
+    for the latest exchange rates. Returns None if any API call fails.
 
     Args:
         symbols (list[tuple[str, str]]): List of (base_currency, quote_currency) tuples.
 
     Returns:
-        list[dict]: List of API response dictionaries.
+        list[dict] | None: List of API response dictionaries, or None if connection fails.
     """
     updated_currencies = []
     for base_currency, quote_currency in symbols:
-        updated_currencies.append(frankfurter_api(base_currency, quote_currency))
+        data = frankfurter_api(base_currency, quote_currency)
+        if not data:
+            return None
+        updated_currencies.append(data)
     return updated_currencies
 
 
-def update_symbol_data(base_currency: str, quote_currency: str) -> tuple[float, str]:
+def update_symbol_data(base_currency: str, quote_currency: str) -> tuple[float | None, str | None]:
     """Retrieve current price and date for a single forex pair.
 
+    Queries the Frankfurter API for the latest exchange rate between the
+    specified currency pair.
+
     Args:
-        base_currency (str): Base currency code.
-        quote_currency (str): Quote currency code.
+        base_currency (str): Base currency code (e.g., "USD").
+        quote_currency (str): Quote currency code (e.g., "SEK").
 
     Returns:
-        tuple[float, str]: Current exchange rate price and date string.
+        tuple[float | None, str | None]: Tuple of (price, date), or (None, None) if connection fails.
     """
     api_response = frankfurter_api(base_currency, quote_currency)
+    if not api_response:
+        print_connection_error()
+        return None, None
     return api_response["rates"][quote_currency], api_response["date"]
 
 
@@ -350,11 +399,16 @@ def prompt_confirmation():
     return input("Are You Sure: ").lower().strip() in ["yes", "yeah", "ja", "are"]
 
 
-def get_currency_data() -> tuple[str, str, dict]:
+def get_currency_data() -> tuple[str, str, dict] | tuple[None, None, None]:
     """Fetch historical rate data for a chosen currency pair with range options.
 
+    Prompts the user to select currencies and a date range option, then queries
+    the Frankfurter API for historical exchange rate data.
+
     Returns:
-        tuple[str, str, dict]: Base currency, quote currency, and rates dictionary.
+        tuple[str, str, dict] | tuple[None, None, None]: Tuple of (base_currency,
+        quote_currency, rates_dict) on success, or (None, None, None) if user
+        cancels or connection fails.
     """
     base_currency, quote_currency = prompt_currencies()
     clear_terminal()
@@ -382,6 +436,9 @@ def get_currency_data() -> tuple[str, str, dict]:
         api_response = frankfurter_api(
             base_currency, quote_currency, start_date, end_date
         )
+        if not api_response:
+            print_connection_error()
+            return None, None, None
         return base_currency, quote_currency, api_response["rates"]
     return None, None, None
 
