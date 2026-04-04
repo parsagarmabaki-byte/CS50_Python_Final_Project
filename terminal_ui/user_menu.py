@@ -522,7 +522,8 @@ def change_password(user: dict) -> None:
         if not check_user_password(
             user["password"], getpass.getpass("Old password (hidden): ")
         ):
-            print("\nWRONG PASSWORD\n")
+            print("\nWRONG PASSWORD")
+            input("Press Enter to continue...")
             break
         new_password_input = getpass.getpass("New password (hidden): ")
         if not new_password_input:

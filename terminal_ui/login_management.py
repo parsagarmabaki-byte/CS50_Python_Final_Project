@@ -136,8 +136,7 @@ def login_options() -> int:
         )
         print()
         if choice == 3:
-            clear_terminal()
-            sys.exit("EXIT SUCCESSFUL")
+            sys.exit("Goodbye...\n")
         return choice
 
 
@@ -172,7 +171,7 @@ def prompt_login():
     """
     user_account = None
     while user_account is None:
-        username = input("Username: ").strip()
+        username = input("Username (Enter = Cancel): ").strip()
         if not username:
             return None, None, None
 
@@ -245,7 +244,7 @@ def get_valid_username(accounts_csv_path: Path) -> str | None:
     """
     username_available = False
     while not username_available:
-        username = input("Username: ").strip()
+        username = input("Username (Enter = cancel): ").strip()
         if not username:
             return None
         if not re.search(r"^[A-Za-z0-9_ ]{3,24}$", username):
@@ -379,7 +378,7 @@ def get_valid_email() -> str | None:
     """
     is_valid = False
     while not is_valid:
-        email = input("Email: ").strip()
+        email = input("Email (Enter = Cancel): ").strip()
         if not email:
             return None
         is_valid = is_email_valid(email)
