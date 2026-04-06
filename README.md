@@ -12,6 +12,11 @@ A Python application for tracking currency exchange rates using the [Frankfurter
 - 📊 **Currency Tracking** — Watchlist management and price history
 - 🧪 **Testable Architecture** — Repository pattern with dependency injection
 
+## Demo Videos
+
+- `Watchlist_Terminal_Demo.mp4` — Terminal UI walkthrough
+- `Watchlist_WebUI_Demo.mp4` — Web UI (React SPA + FastAPI) walkthrough
+
 ## Project Structure
 
 ```
@@ -21,7 +26,10 @@ final_project/
 │   ├── login_management.py   # Authentication & account management
 │   ├── user_menu.py          # User dashboard menu
 │   ├── API_management.py     # Currency API functions
-│   └── argparse_management.py # CLI argument parsing
+│   ├── argparse_management.py # CLI argument parsing
+│   ├── test_API_management.py # Tests for API module
+│   ├── test_login_management.py # Tests for login module
+│   └── test_usermenu.py      # Tests for user menu
 ├── web_ui/                   # Web application
 │   ├── final_project/        # Backend Python package
 │   │   ├── __init__.py
@@ -30,20 +38,36 @@ final_project/
 │   │   ├── repositories.py   # CSV data access layer
 │   │   ├── services.py       # Business logic with bcrypt
 │   │   ├── api_clients.py    # Frankfurter API client
-│   │   ├── cli.py            # CLI adapter
+│   │   ├── cli.py            # CLI adapter with demo flags
+│   │   ├── main.py           # Interactive menu-driven CLI launcher
 │   │   └── web.py            # FastAPI web adapter
 │   ├── tests/                # Web backend tests
-│   └── web-client/           # React + TypeScript SPA
-│       ├── src/
-│       ├── package.json
-│       └── README.md
+│   ├── web-client/           # React + TypeScript SPA
+│   │   ├── src/
+│   │   ├── public/
+│   │   ├── index.html
+│   │   ├── vite.config.ts
+│   │   ├── tailwind.config.cjs
+│   │   ├── tsconfig.json
+│   │   ├── Dockerfile / Dockerfile.dev
+│   │   ├── nginx.conf
+│   │   └── ... (standard React tooling)
+│   ├── Dockerfile            # Backend Docker image
+│   ├── docker-compose.yml    # Production Docker compose
+│   ├── docker-compose.dev.yml # Development Docker compose
+│   ├── .env.docker           # Docker environment template
+│   ├── DEPLOYMENT_OPTIONS.md # Deployment comparison guide
+│   ├── DOCKER_COMPOSE_DEPLOYMENT.md # Docker deployment guide
+│   └── UBUNTU_SERVER_CONFIG.md # Manual Ubuntu deployment guide
 ├── csv_files/                # Shared data persistence
 │   ├── Accounts.csv          # User credentials (bcrypt hashed)
 │   └── account_directory/    # User-specific data
-│       ├── username1/
+│       ├── username/
 │       │   ├── Watchlist.csv
 │       │   └── Prices.csv
-│       └── username2/
+│       └── ...
+├── Watchlist_Terminal_Demo.mp4  # Terminal UI demo video
+├── Watchlist_WebUI_Demo.mp4     # Web UI demo video
 ├── tests.py                  # Unit tests
 ├── requirements.txt          # Python dependencies
 ├── pyproject.toml           # Project configuration
@@ -98,6 +122,25 @@ pip install -r requirements.txt
 - `pydantic` — Data validation
 - `pytest` — Testing
 
+### Install via pyproject.toml (Recommended)
+
+The project defines optional dev dependencies for linting and type checking:
+
+```bash
+pip install -e ".[dev]"
+```
+
+This installs all runtime dependencies plus `black`, `isort`, and `mypy` for development.
+
+### CLI Entry Points
+
+After installing via `pyproject.toml`, two CLI entry points are available:
+
+```bash
+marketwatch-cli    # Launches terminal_ui/main.py
+marketwatch-web    # FastAPI web app (use with uvicorn: uvicorn marketwatch-web:app)
+```
+
 ## Running the Terminal UI (CLI)
 
 ### Interactive Mode
@@ -123,7 +166,7 @@ Login with username (password prompted securely via hidden input):
 python terminal_ui/main.py -u username
 ```
 
-**Note:** The password is always entered via secure hidden input (not visible on screen), similar to standard Unix login prompts.
+**Note:** The password is always entered via secure hidden input (not visible on screen), similar to standard Unix login prompts. There is no `-p/--password` flag — this is intentional to prevent passwords from appearing in shell history.
 
 ### Terminal UI Features
 
@@ -135,8 +178,20 @@ python terminal_ui/main.py -u username
   - Email: Validated using `email_validator` library
 - 📁 **Auto Account Setup** — Automatic creation of user directories and CSV files
 - 📊 **Watchlist Management** — Add/remove/view currency symbols
+  - View entire watchlist
+  - Add individual symbols
+  - Remove symbols from watchlist
 - 💹 **Live Prices** — Fetch exchange rates from Frankfurter API
+  - Update all watchlist symbols at once
+  - Update individual symbols
+  - View prices for date ranges
+  - Show all watchlist prices
 - ⚙️ **Account Management** — Change email, password, or delete account
+  - Show account info
+  - Change email
+  - Change password
+  - Delete account
+- 🌐 **Web Server Launch** — Start the FastAPI web server directly from the terminal menu
 
 ## Running the Web API (FastAPI)
 
@@ -180,6 +235,10 @@ The web API uses simple token-based authentication:
 | GET    | `/me/prices`              | Yes   | Get latest prices              |
 | POST   | `/me/prices/update`       | Yes   | Refresh all watchlist prices   |
 | GET    | `/me/prices/export`       | Yes   | Download prices as CSV         |
+| POST   | `/me/prices/historical`   | Yes   | Fetch historical exchange rates |
+| DELETE | `/me/account`             | Yes   | Delete account (password + confirmation) |
+
+**Interactive API docs:** FastAPI provides auto-generated Swagger UI at `http://127.0.0.1:8000/docs` and ReDoc at `http://127.0.0.1:8000/redoc`.
 
 ### Example Requests
 
@@ -204,6 +263,59 @@ Response: `{"symbol":"FX:USDSEK","price":10.5,"date":"2026-03-13","source":"Fran
 curl -X GET http://127.0.0.1:8000/me/prices/export \
   -H "Authorization: Bearer <your-token>" \
   -o prices.csv
+```
+
+**Fetch historical prices:**
+```bash
+curl -X POST http://127.0.0.1:8000/me/prices/historical \
+  -H "Authorization: Bearer <your-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"base":"USD","quote":"SEK","start_date":"2026-01-01","end_date":"2026-03-30"}'
+```
+Response: `[{"date":"2026-01-01","price":10.45},{"date":"2026-01-02","price":10.48},...]`
+
+**Delete account:**
+```bash
+curl -X DELETE http://127.0.0.1:8000/me/account \
+  -H "Authorization: Bearer <your-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"password":"secret","confirmation":"DELETE"}'
+```
+Response: `{"ok": true}`
+
+## Running the Interactive CLI Launcher
+
+The `web_ui/final_project/main.py` module provides a full interactive menu-driven CLI with 12 options:
+
+```bash
+cd web_ui
+python -m final_project.main
+```
+
+**Menu options include:**
+1. Register new user
+2. Login / Logout
+3. View / Add / Remove watchlist symbols
+4. View latest prices
+5. Update all prices
+6. Export prices to CSV
+7. Start web server (uvicorn)
+8. Health check
+9. Quit
+
+### CLI Demo Flags
+
+For scripting/testing, the launcher supports demo flags:
+
+```bash
+# Register a demo user
+python -m final_project.main --demo-register testuser password123 test@example.com
+
+# Add a symbol for an existing user
+python -m final_project.main --demo-add-symbol testuser USD SEK
+
+# Run demo flags without entering interactive menu
+python -m final_project.main --demo-register testuser password123 test@example.com --no-menu
 ```
 
 ## Running the Legacy CLI
@@ -270,6 +382,29 @@ Output is in `web_ui/web-client/dist/`. Deploy to any static host or serve from 
 
 See `web_ui/web-client/README.md` for full documentation.
 
+## Docker Deployment
+
+The project includes Docker configuration for production and development deployment:
+
+```bash
+cd web_ui
+
+# Production deployment
+docker-compose up -d
+
+# Development deployment (with hot reload)
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+**Deployment guides:**
+- `DOCKER_COMPOSE_DEPLOYMENT.md` — Full Docker Compose setup guide
+- `DEPLOYMENT_OPTIONS.md` — Comparison of deployment strategies
+- `UBUNTU_SERVER_CONFIG.md` — Manual Ubuntu server setup with systemd + Nginx
+
+**Environment variables:** Copy `.env.docker` to `.env` and configure `SERVER_IP`, `FRONTEND_PORT`, and `BACKEND_PORT`.
+
+**CORS configuration:** The web API in `web.py` includes CORS origins for localhost and example private IPs. Update the `allow_origins` list with your server's IP or domain when deploying.
+
 ## Testing
 
 ### Run All Tests
@@ -325,7 +460,7 @@ username,password,email,date
 alice,$2b$12$KIXx...hashed...,alice@example.com,2026-03-30
 ```
 
-**Note:** The `password` field contains a bcrypt hash, not plain text.
+**Note:** The `password` field contains a bcrypt hash, not plain text. The `date` field format differs between UIs: the Terminal UI writes locale-dependent short dates (e.g., `04/04/26` via `%x`), while the Web UI writes ISO format (`YYYY-MM-DD`). This is a known inconsistency.
 
 ### Per-User Watchlist (`csv_files/account_directory/username/Watchlist.csv`)
 
@@ -334,6 +469,8 @@ symbol
 FX:USDSEK
 FX:EURGBP
 ```
+
+**Note:** The Terminal UI uses `Stocks` as the column header in Watchlist.csv, while the Web UI uses `symbol`. Both UIs can read each other's files, but this schema difference is a known inconsistency.
 
 ### Per-User Prices (`csv_files/account_directory/username/Prices.csv`)
 
@@ -518,7 +655,7 @@ MIT License
 cd terminal_ui
 python main.py  # Interactive menu
 # or
-python main.py -u username -p password  # Direct login
+python main.py -u username  # Login (password prompted securely)
 ```
 
 ### Web API
